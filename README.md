@@ -16,6 +16,12 @@ Não há acesso à rede durante o uso do aplicativo. Downloads ocorrem somente n
 
 ## Componentes e autoria
 
+### Recuperação de sessão
+
+A interface salva `partidas/sessao.properties` após registrar/desfazer lances, iniciar análise, reiniciar a partida e fechar normalmente. Para recuperar após reabrir, clique em **Restaurar última sessão**. O histórico é validado antes de substituir a partida. Confirme a posição no tabuleiro físico e atualize o relógio: o tempo salvo não inclui o período em que o programa esteve fechado nem o tempo de operação manual. Iniciar uma nova partida substitui a sessão; exporte o PGN para preservar partidas anteriores. Esta função não altera a regra do campeonato sobre derrota por falha.
+
+Se o cálculo consumir todo o tempo informado, o lance não é aplicado. O relógio físico continua sendo a referência oficial.
+
 - `ChessChallenge.java`: interface, histórico, entrada de lances legais e exportação PGN.
 - `Stockfish.java`: transporte UCI, histórico completo enviado ao motor, limites de espera e encerramento de processo.
 - `TimeManager.java`: política própria experimental que determina `go movetime`. Reserva tempo operacional, estima um horizonte de lances e ajusta o orçamento conforme capturas, promoções e xeque. Limita cada cálculo a 30 segundos e 8% do tempo restante. Lance único recebe orçamento reduzido.

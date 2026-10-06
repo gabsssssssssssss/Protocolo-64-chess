@@ -37,6 +37,24 @@ public final class Verification {
             check(allocation>0 && allocation<=remaining,"Orçamento excede relógio");
         }
         System.out.println("OK: perft, roque, en passant, subpromoção, mate, SAN e limites de tempo.");
+        Path temporary=Files.createTempDirectory("chess-session-test-");
+        Path file=temporary.resolve("sessao.properties");
+        try {
+            SessionStore store=new SessionStore(file);
+            Board position=new Board();
+            Move first=legal(position,"e2e4");
+            store.save(Side.BLACK,"23:41",java.util.List.of(first));
+            var restored=store.load();
+            check(restored.color()==Side.BLACK && restored.clock().equals("23:41") && restored.moves().equals(java.util.List.of(first)),"Persistência de sessão");
+            boolean invalidClock=false;
+            try { store.save(Side.WHITE,"tempo inválido",java.util.List.of()); } catch(java.io.IOException expected) { invalidClock=true; }
+            check(invalidClock && store.load().moves().size()==1,"Falha de salvamento deve preservar sessão anterior");
+            Files.writeString(file,"version=1\ncolor=WHITE\nclock=25:00\nmoves=e2e5\n");
+            boolean rejected=false;
+            try { store.load(); } catch(java.io.IOException expected) { rejected=true; }
+            check(rejected,"Sessão corrompida deve ser rejeitada");
+            System.out.println("OK: salvamento, restauração e rejeição de sessão inválida.");
+        } finally { Files.deleteIfExists(file); Files.deleteIfExists(temporary); }
         if(args.length>0 && args[0].equals("--engine")) {
             try(Stockfish engine=new Stockfish(Stockfish.locate())) {
                 for(String text:new String[]{"","e2e4","e2e4 e7e5 g1f3"}) {
