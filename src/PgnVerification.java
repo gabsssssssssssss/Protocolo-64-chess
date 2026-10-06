@@ -9,6 +9,10 @@ public final class PgnVerification {
         check(historical.san().size()==33,"Partida histórica completa: 33 meios-lances");
         Board historicalBoard=new Board(); historicalBoard.loadFromFen(historical.positions().getLast());
         check(historicalBoard.isMated(),"Partida histórica deve terminar em xeque-mate");
+        var carlsen=PgnCollection.read(Path.of("datasets/carlsen-mundial-2021-1.pgn"));
+        check(carlsen.size()==1 && carlsen.getFirst().san().size()==89,"Partida real do Carlsen deve conter 89 meios-lances");
+        check(PgnCollection.filterPlayer(carlsen,"CARLSEN").size()==1,"Filtro de jogador por nome");
+        check(PgnCollection.filterPlayer(carlsen,"Morphy").isEmpty(),"Filtro sem resultado");
         check(examples.size()==2,"Coleção com várias partidas");
         Board board=new Board(); board.loadFromFen(examples.getFirst().positions().getLast());
         check(board.isMated(),"Reprodução deve alcançar o mate");

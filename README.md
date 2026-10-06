@@ -4,6 +4,8 @@ Primeira versão local de treinamento. Requer Windows x64 e JDK 21 ou superior; 
 
 ## Executar
 
+O tabuleiro usa tema escuro, peças claras/escuras com contorno, coordenadas externas, destaque do último lance e destinos legais da peça selecionada. O mesmo componente é usado na partida, no estudo PGN e no confronto automático.
+
 1. Na primeira preparação, execute `powershell -ExecutionPolicy Bypass -File preparar.ps1` com internet.
 2. Abra `iniciar.bat`. Ele compila e abre a interface.
 3. Escolha nossa cor antes do primeiro lance. Com brancas, clique em **Calcular nosso lance**. Com pretas, registre primeiro o lance adversário.
@@ -17,6 +19,12 @@ Não há acesso à rede durante o uso do aplicativo. Downloads ocorrem somente n
 ## Componentes e autoria
 
 ### Dataset e reprodução PGN
+
+Há uma amostra real do Magnus Carlsen em `datasets/carlsen-mundial-2021-1.pgn` (89 meios-lances, Mundial 2021). No estudo, clique em **Abrir amostra do Magnus Carlsen**. Para coleções maiores, use **Abrir PGN** e digite `Carlsen` no filtro de jogador. O filtro procura nas brancas e nas pretas, sem diferenciar maiúsculas. Fonte e licença estão em `datasets/CARLSEN-FONTE.md`.
+
+### Uso offline
+
+Após a preparação inicial, `iniciar.bat`, `estudar.bat` e `assistir.bat` usam apenas o Java instalado, os JARs e o Stockfish em `vendor/`, e arquivos PGN locais. Nenhum deles baixa dependências durante a execução. `preparar.ps1` é o único script de instalação que usa internet; execute antes do evento. O VS Code não é necessário para jogar. Para confirmar no computador da competição, desligue o Wi-Fi/desconecte a rede e teste cálculo de lance, leitura do PGN do Carlsen e restauração de sessão. Não é necessário bloquear rede ou alterar firewall para usar o aplicativo.
 
 Abra `estudar.bat` ou **Estudar partidas PGN** na interface. Clique em **Abrir PGN** para importar uma coleção local UTF-8 (até 20 MB e 1000 partidas). Escolha uma partida na lista; use Início/Anterior/Próximo/Fim ou Reproduzir/Pausar. A velocidade vai de 0,25 a 10 segundos entre lances e afeta apenas a reprodução visual. O tabuleiro é reconstruído com lances legais; erros de importação preservam a coleção anterior. São suportados roque, promoção e posição inicial FEN. Comentários e linhas alternativas são ignorados na reprodução; fica a linha principal.
 

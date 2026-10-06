@@ -7,7 +7,9 @@ import java.nio.file.*;
 import java.util.List;
 
 public final class PgnViewer extends JFrame {
-    private final JLabel[] squares=new JLabel[64];
+    private final BoardView boardView=new BoardView();
+    private final JTextField playerFilter=new JTextField();
+    private List<PgnCollection.Replay> collection=List.of();
     private final JComboBox<PgnCollection.Replay> games=new JComboBox<>();
     private final JLabel status=new JLabel("Abra uma coleção PGN local."), file=new JLabel("Nenhum arquivo carregado");
     private final JTextArea history=new JTextArea(18,26);
@@ -18,14 +20,18 @@ public final class PgnViewer extends JFrame {
     private PgnCollection.Replay current;
     public PgnViewer() {
         super("Partidas PGN • Estudo offline"); setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        JPanel board=new JPanel(new GridLayout(8,8)); board.setPreferredSize(new Dimension(560,560));
-        for(int i=0;i<64;i++) {
-            squares[i]=new JLabel("",SwingConstants.CENTER); squares[i].setOpaque(true);
-            squares[i].setFont(new Font("Segoe UI Symbol",Font.PLAIN,42)); board.add(squares[i]);
-        }
         JPanel side=new JPanel(); side.setLayout(new BoxLayout(side,BoxLayout.Y_AXIS));
         side.setBorder(BorderFactory.createEmptyBorder(12,12,12,12));
+        JLabel title=new JLabel("BIBLIOTECA DE PARTIDAS"); title.setFont(new Font("Segoe UI",Font.BOLD,21)); side.add(title);
+        side.add(new JLabel("● ESTUDO OFFLINE")); side.add(Box.createVerticalStrut(12));
         open.addActionListener(e -> choose()); side.add(open); side.add(file);
+        JButton carlsen=new JButton("Abrir amostra do Magnus Carlsen"); carlsen.addActionListener(e -> load(Path.of("datasets/carlsen-mundial-2021-1.pgn"))); side.add(carlsen);
+        side.add(new JLabel("Filtrar jogador (ex.: Carlsen)")); side.add(playerFilter);
+        playerFilter.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { filter(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { filter(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { filter(); }
+        });
         games.setPreferredSize(new Dimension(360,32)); games.setMaximumSize(new Dimension(360,32));
         games.addActionListener(e -> { pause(); current=(PgnCollection.Replay)games.getSelectedItem(); ply=0; draw(); }); side.add(games);
         JPanel navigation=new JPanel();
@@ -38,8 +44,10 @@ public final class PgnViewer extends JFrame {
         speed.addChangeListener(e -> { int delay=(int)(((Number)speed.getValue()).doubleValue()*1000); timer.setDelay(delay); timer.setInitialDelay(delay); });
         history.setEditable(false); history.setLineWrap(true); history.setWrapStyleWord(true);
         side.add(new JScrollPane(history));
-        add(board,BorderLayout.CENTER); add(side,BorderLayout.EAST); add(status,BorderLayout.SOUTH);
+        add(boardView,BorderLayout.CENTER); add(side,BorderLayout.EAST); add(status,BorderLayout.SOUTH);
         addWindowListener(new WindowAdapter() { public void windowClosed(WindowEvent e) { timer.stop(); } });
+        UiTheme.sidebar(side,430); UiTheme.style(getContentPane());
+        status.setBorder(BorderFactory.createEmptyBorder(10,16,10,16)); setMinimumSize(new Dimension(980,700));
         draw(); pack(); setLocationRelativeTo(null);
     }
     private void button(JPanel panel,String label,Runnable task) { JButton b=new JButton(label); b.addActionListener(e -> task.run()); panel.add(b); }
@@ -56,25 +64,28 @@ public final class PgnViewer extends JFrame {
             protected void done() {
                 open.setEnabled(true);
                 try {
-                    var imported=get(); pause(); games.setModel(new DefaultComboBoxModel<>(imported.toArray(PgnCollection.Replay[]::new)));
-                    current=imported.getFirst(); ply=0; file.setText(path.getFileName()+" — "+imported.size()+" partidas"); draw();
+                    var imported=get(); collection=imported; playerFilter.setText(""); filter();
+                    file.setText(path.getFileName()+" — "+imported.size()+" partidas"); draw();
                 } catch(Exception e) { Throwable cause=e.getCause()==null ? e : e.getCause(); status.setText("Falha de importação: "+cause.getMessage()); }
             }
         }.execute();
     }
+    private void filter() {
+        pause(); var filtered=PgnCollection.filterPlayer(collection,playerFilter.getText());
+        games.setModel(new DefaultComboBoxModel<>(filtered.toArray(PgnCollection.Replay[]::new)));
+        current=filtered.isEmpty() ? null : filtered.getFirst(); ply=0; draw();
+        if(filtered.isEmpty()) status.setText("Nenhuma partida corresponde ao jogador informado.");
+    }
     private void draw() {
         Board board=new Board(); if(current!=null) board.loadFromFen(current.positions().get(ply));
-        for(int i=0;i<64;i++) {
-            Square sq=Square.squareAt((7-i/8)*8+i%8);
-            String glyph=switch(board.getPiece(sq)) {
-                case WHITE_KING -> "♔"; case WHITE_QUEEN -> "♕"; case WHITE_ROOK -> "♖";
-                case WHITE_BISHOP -> "♗"; case WHITE_KNIGHT -> "♘"; case WHITE_PAWN -> "♙";
-                case BLACK_KING -> "♚"; case BLACK_QUEEN -> "♛"; case BLACK_ROOK -> "♜";
-                case BLACK_BISHOP -> "♝"; case BLACK_KNIGHT -> "♞"; case BLACK_PAWN -> "♟"; default -> "";
-            };
-            squares[i].setText("<html><center>"+glyph+"<br><font size='2'>"+sq.toString().toLowerCase()+"</font></center></html>");
-            squares[i].setBackground((i/8+i%8)%2==0 ? new Color(235,236,208) : new Color(119,149,86));
+        com.github.bhlangonijr.chesslib.move.Move last=null;
+        if(current!=null && ply>0) {
+            Board before=new Board(); before.loadFromFen(current.positions().get(ply-1));
+            String uci=current.uci().get(ply-1);
+            last=before.legalMoves().stream().filter(m -> m.toString().equalsIgnoreCase(uci)).findFirst().orElse(null);
         }
+        boardView.display(board,Side.WHITE,null,last,false);
+        if(current==null) history.setText("");
         if(current!=null) {
             StringBuilder text=new StringBuilder();
             for(int i=0;i<current.san().size();i++) { if(i==ply-1) text.append("▶ "); if(i%2==0) text.append(i/2+1).append(". "); text.append(current.san().get(i)).append(i%2==0 ? " " : "\n"); }
@@ -82,6 +93,7 @@ public final class PgnViewer extends JFrame {
         }
     }
     public static void main(String[] args) { SwingUtilities.invokeLater(() -> {
+        UiTheme.install();
         PgnViewer viewer=new PgnViewer();
         if(args.length>0 && args[0].equals("--preview")) {
             try {

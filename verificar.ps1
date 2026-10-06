@@ -9,3 +9,5 @@ java -cp 'build;vendor/*' ChessChallenge --ui-test
 if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação da interface.' }
 java -cp 'build;vendor/*' PgnVerification
 if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação PGN.' }
+java -cp 'build;vendor/*' BoardViewVerification
+if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação do tabuleiro.' }

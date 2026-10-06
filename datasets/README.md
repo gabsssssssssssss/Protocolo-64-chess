@@ -8,4 +8,6 @@ Coloque aqui arquivos `.pgn` de partidas históricas. Use PGN em UTF-8, xadrez p
 
 Para cada coleção adicionada, registre aqui: nome do arquivo, fonte/URL, data de obtenção, licença/permissão de uso e filtros aplicados. Não copie coleções sem verificar as condições da fonte.
 
+`carlsen-mundial-2021-1.pgn`: partida completa do Magnus Carlsen, disponível localmente. Veja `CARLSEN-FONTE.md` para atribuição ao Lichess, fonte, data de obtenção e CC BY-SA 4.0. Na tela de estudo, use o botão da amostra ou abra seu próprio PGN e filtre por jogador.
+
 Nesta etapa, os dados são usados para reprodução e estudo. Não treinam a rede do Stockfish nem alteram a seleção dos lances durante partidas do campeonato.

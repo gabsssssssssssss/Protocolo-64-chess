@@ -10,7 +10,7 @@ import java.util.Locale;
 public final class ChessChallenge extends JFrame {
     private final Board board = new Board();
     private final ArrayList<Move> moves = new ArrayList<>();
-    private final JButton[] squares = new JButton[64];
+    private final BoardView boardView = new BoardView();
     private final JComboBox<String> color = new JComboBox<>(new String[]{"Brancas", "Pretas"});
     private final JTextField clock = new JTextField("25:00"), entry = new JTextField();
     private final JTextArea history = new JTextArea(12, 25);
@@ -26,37 +26,32 @@ public final class ChessChallenge extends JFrame {
         super("Chess Challenge • Java + Stockfish local");
         session=new SessionStore(sessionPath);
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        JPanel grid = new JPanel(new GridLayout(8,8));
-        grid.setPreferredSize(new Dimension(560,560));
-        for (int i=0;i<64;i++) {
-            final int cell=i;
-            squares[i]=new JButton();
-            squares[i].setFont(new Font("Segoe UI Symbol",Font.PLAIN,42));
-            squares[i].setMargin(new Insets(0,0,0,0));
-            squares[i].setFocusPainted(false);
-            squares[i].addActionListener(e -> click(cell));
-            grid.add(squares[i]);
-        }
+        boardView.onClick(this::click);
         JPanel side=new JPanel();
         side.setBorder(BorderFactory.createEmptyBorder(16,16,16,16));
         side.setLayout(new BoxLayout(side,BoxLayout.Y_AXIS));
-        side.add(new JLabel("CHESS CHALLENGE"));
+        JLabel title=new JLabel("CHESS CHALLENGE"); title.setFont(new Font("Segoe UI",Font.BOLD,23)); side.add(title);
+        side.add(new JLabel("● LOCAL / OFFLINE")); side.add(Box.createVerticalStrut(12));
         side.add(new JLabel("Nossa cor")); side.add(color);
         side.add(new JLabel("Tempo restante MM:SS — atualize pelo relógio físico")); side.add(clock);
         button(side,"Calcular nosso lance",this::calculate);
         side.add(new JLabel("Lance adversário: e2e4 (roque: e1g1)")); side.add(entry);
         entry.addActionListener(e -> submit());
         button(side,"Registrar lance",this::submit);
-        button(side,"Desfazer último lance",this::undo);
-        button(side,"Nova partida",this::reset);
-        button(side,"Salvar PGN",this::save);
-        button(side,"Restaurar última sessão",this::restore);
-        button(side,"Estudar partidas PGN",() -> {
+        side.add(Box.createVerticalStrut(10));
+        JPanel actions=new JPanel(new GridLayout(0,2,8,8));
+        actions.setMaximumSize(new Dimension(390,160));
+        button(actions,"Desfazer lance",this::undo);
+        button(actions,"Nova partida",this::reset);
+        button(actions,"Salvar PGN",this::save);
+        button(actions,"Restaurar sessão",this::restore);
+        button(actions,"Estudar PGN",() -> {
             PgnViewer viewer=new PgnViewer(); viewer.setVisible(true); viewer.load(Path.of("datasets/historicas.pgn"));
         });
+        side.add(actions); side.add(Box.createVerticalStrut(12));
         history.setEditable(false);
         side.add(new JScrollPane(history));
-        add(grid,BorderLayout.CENTER); add(side,BorderLayout.EAST);
+        add(boardView,BorderLayout.CENTER); add(side,BorderLayout.EAST);
         status.setBorder(BorderFactory.createEmptyBorder(12,12,12,12)); add(status,BorderLayout.SOUTH);
         color.addActionListener(e -> draw());
         addWindowListener(new WindowAdapter() { public void windowClosing(WindowEvent e) {
@@ -64,6 +59,8 @@ public final class ChessChallenge extends JFrame {
             if(!moves.isEmpty()) checkpoint();
             if (engine!=null) engine.close(); dispose();
         }});
+        UiTheme.sidebar(side,420); UiTheme.style(getContentPane());
+        setMinimumSize(new Dimension(940,700));
         draw(); pack(); setLocationRelativeTo(null);
     }
     private void button(JPanel panel,String text,Runnable action) {
@@ -76,22 +73,8 @@ public final class ChessChallenge extends JFrame {
     }
     private boolean over() { return board.isMated() || board.isStaleMate() || board.isDraw(); }
     private void draw() {
-        for(int i=0;i<64;i++) {
-            Square sq=square(i); Piece p=board.getPiece(sq);
-            String glyph=switch(p) {
-                case WHITE_KING -> "♔"; case WHITE_QUEEN -> "♕"; case WHITE_ROOK -> "♖";
-                case WHITE_BISHOP -> "♗"; case WHITE_KNIGHT -> "♘"; case WHITE_PAWN -> "♙";
-                case BLACK_KING -> "♚"; case BLACK_QUEEN -> "♛"; case BLACK_ROOK -> "♜";
-                case BLACK_BISHOP -> "♝"; case BLACK_KNIGHT -> "♞"; case BLACK_PAWN -> "♟";
-                default -> "";
-            };
-            squares[i].setText("<html><center>"+glyph+"<br><font size='2'>"+sq.toString().toLowerCase(Locale.ROOT)+"</font></center></html>");
-            Color bg=(i/8+i%8)%2==0 ? new Color(235,236,208) : new Color(119,149,86);
-            if(lastMove.length()>=4 && (sq.toString().equalsIgnoreCase(lastMove.substring(0,2)) || sq.toString().equalsIgnoreCase(lastMove.substring(2,4)))) bg=new Color(207,191,98);
-            if(sq==selected) bg=new Color(114,185,207);
-            squares[i].setBackground(bg); squares[i].setForeground(Color.BLACK);
-            squares[i].setEnabled(!busy);
-        }
+        Move latest=moves.isEmpty() ? null : moves.getLast();
+        boardView.display(board,ours(),selected,latest,!busy && !over() && board.getSideToMove()!=ours());
         color.setEnabled(moves.isEmpty() && !busy);
         controls.forEach(b -> b.setEnabled(!busy)); entry.setEnabled(!busy); clock.setEnabled(!busy);
         StringBuilder text=new StringBuilder();
@@ -225,6 +208,7 @@ public final class ChessChallenge extends JFrame {
         draw(); status.setText("Sessão restaurada. Confira posição e ajuste o tempo pelo relógio físico antes de continuar.");
     }
     public static void main(String[] args) {
+        UiTheme.install();
         SwingUtilities.invokeLater(() -> {
             boolean test=args.length>0 && (args[0].equals("--ui-test") || args[0].equals("--preview"));
             ChessChallenge app=new ChessChallenge(Path.of(test ? "tmp/sessao-teste.properties" : "partidas/sessao.properties"));
