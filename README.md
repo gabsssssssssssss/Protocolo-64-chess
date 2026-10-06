@@ -16,6 +16,12 @@ Não há acesso à rede durante o uso do aplicativo. Downloads ocorrem somente n
 
 ## Componentes e autoria
 
+### Dataset e reprodução PGN
+
+Abra `estudar.bat` ou **Estudar partidas PGN** na interface. Clique em **Abrir PGN** para importar uma coleção local UTF-8 (até 20 MB e 1000 partidas). Escolha uma partida na lista; use Início/Anterior/Próximo/Fim ou Reproduzir/Pausar. A velocidade vai de 0,25 a 10 segundos entre lances e afeta apenas a reprodução visual. O tabuleiro é reconstruído com lances legais; erros de importação preservam a coleção anterior. São suportados roque, promoção e posição inicial FEN. Comentários e linhas alternativas são ignorados na reprodução; fica a linha principal.
+
+Coloque suas coleções em `datasets/` e registre sua origem/licença conforme `datasets/README.md`. Os exemplos incluídos são didáticos, sem atribuição a jogadores famosos. O visualizador funciona offline e não usa o Stockfish. O dataset ainda não é um repertório de aberturas nem treinamento do motor.
+
 ### Recuperação de sessão
 
 A interface salva `partidas/sessao.properties` após registrar/desfazer lances, iniciar análise, reiniciar a partida e fechar normalmente. Para recuperar após reabrir, clique em **Restaurar última sessão**. O histórico é validado antes de substituir a partida. Confirme a posição no tabuleiro físico e atualize o relógio: o tempo salvo não inclui o período em que o programa esteve fechado nem o tempo de operação manual. Iniciar uma nova partida substitui a sessão; exporte o PGN para preservar partidas anteriores. Esta função não altera a regra do campeonato sobre derrota por falha.
