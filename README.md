@@ -4,7 +4,7 @@ Primeira versão local de treinamento. Requer Windows x64 e JDK 21 ou superior; 
 
 ## Executar
 
-O tabuleiro usa tema escuro, peças claras/escuras com contorno, coordenadas externas, destaque do último lance e destinos legais da peça selecionada. O mesmo componente é usado na partida, no estudo PGN e no confronto automático.
+O tabuleiro usa tema escuro, moldura com detalhe dourado, casas verde/marfim e peças vetoriais próprias com gradientes e contornos. Não depende de fontes de símbolos, imagens externas ou downloads para desenhar as peças. Inclui coordenadas externas, destaque do último lance, indicação de seleção, hover e destinos legais (ponto para casa vazia, anel para captura). O mesmo componente é usado na partida, no estudo PGN e no confronto automático.
 
 1. Na primeira preparação, execute `powershell -ExecutionPolicy Bypass -File preparar.ps1` com internet.
 2. Abra `iniciar.bat`. Ele compila e abre a interface.
