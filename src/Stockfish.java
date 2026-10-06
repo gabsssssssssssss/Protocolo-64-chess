@@ -42,6 +42,11 @@ public final class Stockfish implements AutoCloseable {
         send("go movetime " + millis);
         return waitFor("bestmove ", millis + 5000).split(" ")[1];
     }
+    public String playWithClock(String moves, long whiteMillis, long blackMillis) throws Exception {
+        send("position startpos" + (moves.isBlank() ? "" : " moves " + moves));
+        send("go wtime " + whiteMillis + " btime " + blackMillis + " winc 0 binc 0");
+        return waitFor("bestmove ", Math.max(whiteMillis, blackMillis) + 5000).split(" ")[1];
+    }
     public void newGame() throws Exception {
         send("ucinewgame"); send("isready"); waitFor("readyok", 10000);
     }

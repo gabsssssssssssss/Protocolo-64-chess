@@ -27,7 +27,13 @@ Código inicial elaborado com assistência do Codex. Mantenham um registro trans
 
 ## Verificação
 
+Para assistir aos confrontos automáticos, abra `assistir.bat`. O tabuleiro acompanha as duas partidas e mostra a cor da gestão própria, o lance e os tempos (atualizados ao fim de cada lance). Fechar o visualizador não interrompe os motores; os PGNs são preservados ao finalizar o confronto.
+
 Execute `powershell -ExecutionPolicy Bypass -File verificar.ps1`.
+
+No VS Code, o projeto reconhece `src/` e os JARs de `vendor/`. Com a extensão recomendada **Extension Pack for Java**, abra Executar e Depurar e selecione **Abrir Chess Challenge**. Os scripts continuam funcionando sem extensões.
+
+Para comparar a política própria com a gestão original, execute `powershell -ExecutionPolicy Bypass -File comparar.ps1 -Segundos 30`. São duas partidas com cores invertidas e mesma abertura, usando processos separados, mesmo número de threads e mesma memória. PGNs e tempos por lance ficam em `partidas/comparacao-.../`. O orçamento original usa `go wtime/btime`; o próprio usa `go movetime`. Inicialização dos processos fica fora do relógio; duração da comunicação e busca entra no relógio. Há limite de segurança de 400 meios-lances, que produz partida inacabada (`*`). O teste rápido verifica integração; para avaliar força são necessárias muitas partidas e aberturas diferentes. A comparação automática não inclui tempo de movimentação de peças físicas.
 
 Antes do campeonato ainda são necessários: validação visual no computador da equipe, simulações de partidas físicas completas, teste sem internet, teste de aquecimento, comparação da gestão própria contra a original com mesmo hardware e controle de tempo, e preparação da arguição. Não há evidência de ganho de força desta política inicial.
 

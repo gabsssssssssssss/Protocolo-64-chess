@@ -192,7 +192,9 @@ public final class ChessChallenge extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             ChessChallenge app=new ChessChallenge();
-            if(args.length>0 && args[0].equals("--preview")) {
+            if(args.length>0 && args[0].equals("--ui-test")) {
+                app.testInterface();
+            } else if(args.length>0 && args[0].equals("--preview")) {
                 try {
                     app.setVisible(false);
                     app.getContentPane().doLayout();
@@ -207,6 +209,29 @@ public final class ChessChallenge extends JFrame {
                 finally { app.dispose(); }
             } else app.setVisible(true);
         });
+    }
+    private void testInterface() {
+        clock.setText("00:02");
+        calculate();
+        if(!busy || entry.isEnabled()) { System.err.println("Falha: interface não bloqueou entrada durante cálculo."); dispose(); System.exit(1); }
+        long deadline=System.nanoTime()+30_000_000_000L;
+        var timer=new javax.swing.Timer(100,null);
+        timer.addActionListener(e -> {
+            if(busy && System.nanoTime()<deadline) return;
+            timer.stop();
+            try {
+                if(busy || moves.size()!=1 || board.getSideToMove()!=Side.BLACK || !entry.isEnabled()) throw new AssertionError("Falha no retorno do cálculo à interface: "+status.getText());
+                entry.setText("e7e4"); submit();
+                if(moves.size()!=1) throw new AssertionError("Entrada ilegal mudou a partida.");
+                entry.setText(board.legalMoves().getFirst().toString()); submit();
+                if(moves.size()!=2 || board.getSideToMove()!=Side.WHITE) throw new AssertionError("Entrada do adversário não registrada.");
+                undo();
+                if(moves.size()!=1 || board.getSideToMove()!=Side.BLACK) throw new AssertionError("Desfazer não restaurou a vez.");
+                System.out.println("OK: cálculo assíncrono, bloqueio de entrada, retorno à interface, rejeição de lance ilegal, registro e desfazer.");
+            } catch(Throwable failure) { failure.printStackTrace(); System.exit(1); }
+            finally { if(engine!=null) engine.close(); dispose(); }
+        });
+        timer.start();
     }
     private static void layoutTree(Container container) {
         container.doLayout();

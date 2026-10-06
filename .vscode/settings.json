@@ -1,0 +1,6 @@
+{
+  "java.project.sourcePaths": ["src"],
+  "java.project.outputPath": "build",
+  "java.project.referencedLibraries": ["vendor/*.jar"],
+  "files.encoding": "utf8"
+}
