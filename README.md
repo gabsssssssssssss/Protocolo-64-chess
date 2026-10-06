@@ -6,17 +6,17 @@ Primeira versão local de treinamento. Requer Windows x64 e JDK 21 ou superior; 
 
 ### Campeonato com tabuleiro físico: terminal do VS Code
 
-A saída durante a partida é reduzida às instruções da nossa jogada e aos prompts de cor, lance adversário, tempo e confirmação. Não imprime orçamento de cálculo, mensagens de registro ou logs do motor. Erros de entrada/operação continuam aparecendo quando necessário; comandos explícitos como `tabuleiro` e `historico` mostram o conteúdo solicitado.
+A saída durante a partida é reduzida às instruções da nossa jogada e aos prompts de cor, lance adversário e confirmação. Não pergunta tempo nem imprime orçamento de cálculo, mensagens de registro ou logs do motor. Erros de entrada/operação continuam aparecendo quando necessário; comandos explícitos como `tabuleiro` e `historico` mostram o conteúdo solicitado.
 
 No VS Code, pressione **Ctrl+Shift+B** para compilar e iniciar o jogo no terminal integrado. Outra opção é executar `powershell -ExecutionPolicy Bypass -File jogar-terminal.ps1` no terminal. Para depurar, pressione F5 e selecione **Jogar no terminal (tabuleiro físico)**. Não exige abrir a janela gráfica.
 
 1. Escolha `brancas` ou `pretas` (ou `restaurar` para recuperar a sessão do terminal).
 2. Na vez do adversário, registre a origem/destino: `e7e5`, `e7 e5` ou SAN como `Nf3`, `O-O`. Para promoção por coordenadas, use `e7e8q` (q=dama, r=torre, b=bispo, n=cavalo).
-3. Na nossa vez, informe o tempo real restante, como `24:30`. A gestão própria determina o tempo de análise.
+3. Na nossa vez, o motor calcula automaticamente. A gestão própria usa um orçamento interno estimado, iniciado em 25 minutos, sem perguntar o tempo.
 4. Leia a instrução **MOVA O PEÃO DE E2 PARA E4**. Captura, roque, en passant e promoção têm instruções adicionais.
 5. Execute no tabuleiro físico, acione o relógio e digite `feito`. Só então o programa registra nosso lance. `cancelar` volta para recalcular; `sair` encerra sem confirmar a recomendação.
 
-Comandos nos prompts de lance/tempo: `tabuleiro`, `historico`, `desfazer`, `salvar`, `sair`. `desfazer` exige corrigir também as peças físicas. A sessão fica em `partidas/sessao-terminal.properties`, separada da interface gráfica. O tempo salvo desconta o cálculo, não a movimentação manual: sempre atualize pelo relógio físico. Se sair ou ocorrer uma falha antes de `feito`, o último lance sugerido não estará no histórico; confira as peças antes de restaurar. A recuperação não altera a regra do evento sobre derrota por falha.
+Comandos no prompt de lance adversário: `tabuleiro`, `historico`, `desfazer`, `salvar`, `sair`. `desfazer` exige corrigir também as peças físicas e não devolve tempo ao orçamento. A sessão fica em `partidas/sessao-terminal.properties`, separada da interface gráfica. O orçamento desconta desde o início do cálculo até digitar `feito`, incluindo movimentação manual e inicialização do motor. Não mede o tempo gasto digitando o lance adversário nem o período com o programa fechado; portanto é uma estimativa e não substitui o relógio físico. Se sair ou ocorrer uma falha antes de `feito`, o último lance sugerido não estará no histórico; confira as peças antes de restaurar. A recuperação não altera a regra do evento sobre derrota por falha.
 
 Tudo funciona localmente usando o mesmo Stockfish e componente de gestão de tempo da interface. O dataset de estudo não participa da escolha dos lances nesta versão.
 

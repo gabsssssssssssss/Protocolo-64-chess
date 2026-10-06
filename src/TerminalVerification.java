@@ -19,7 +19,7 @@ public final class TerminalVerification {
         Path folder=Files.createTempDirectory("terminal-verification-");
         try {
             StringWriter buffer=new StringWriter();
-            new TerminalGame(new BufferedReader(new StringReader("pretas\ne2e5\ne2e4\n00:10\nfeito\nsalvar\nsair\n")),new PrintWriter(buffer,true),folder).run();
+            new TerminalGame(new BufferedReader(new StringReader("pretas\ne2e5\ne2e4\nfeito\nsalvar\nsair\n")),new PrintWriter(buffer,true),folder,10000).run();
             String transcript=buffer.toString();
             check(transcript.contains("Lance inválido") && transcript.contains("MOVA"),"Fluxo terminal com motor real");
             var saved=new SessionStore(folder.resolve("sessao-terminal.properties")).load();
