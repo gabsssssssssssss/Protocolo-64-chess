@@ -3,6 +3,14 @@
   "configurations": [
     {
       "type": "java",
+      "name": "Jogar no terminal (tabuleiro físico)",
+      "request": "launch",
+      "mainClass": "TerminalGame",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "java",
       "name": "Abrir Chess Challenge",
       "request": "launch",
       "mainClass": "ChessChallenge",

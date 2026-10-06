@@ -13,3 +13,5 @@ java -cp 'build;vendor/*' BoardViewVerification
 if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação do tabuleiro.' }
 java -cp 'build;vendor/*' AnalysisVerification
 if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação da análise.' }
+java -cp 'build;vendor/*' TerminalVerification
+if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação do modo terminal.' }
