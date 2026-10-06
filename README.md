@@ -6,6 +6,8 @@ Primeira versão local de treinamento. Requer Windows x64 e JDK 21 ou superior; 
 
 ### Campeonato com tabuleiro físico: terminal do VS Code
 
+A saída durante a partida é reduzida às instruções da nossa jogada e aos prompts de cor, lance adversário, tempo e confirmação. Não imprime orçamento de cálculo, mensagens de registro ou logs do motor. Erros de entrada/operação continuam aparecendo quando necessário; comandos explícitos como `tabuleiro` e `historico` mostram o conteúdo solicitado.
+
 No VS Code, pressione **Ctrl+Shift+B** para compilar e iniciar o jogo no terminal integrado. Outra opção é executar `powershell -ExecutionPolicy Bypass -File jogar-terminal.ps1` no terminal. Para depurar, pressione F5 e selecione **Jogar no terminal (tabuleiro físico)**. Não exige abrir a janela gráfica.
 
 1. Escolha `brancas` ou `pretas` (ou `restaurar` para recuperar a sessão do terminal).

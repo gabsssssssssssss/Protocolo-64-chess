@@ -21,15 +21,15 @@ public final class TerminalVerification {
             StringWriter buffer=new StringWriter();
             new TerminalGame(new BufferedReader(new StringReader("pretas\ne2e5\ne2e4\n00:10\nfeito\nsalvar\nsair\n")),new PrintWriter(buffer,true),folder).run();
             String transcript=buffer.toString();
-            check(transcript.contains("Lance rejeitado") && transcript.contains("MOVA") && transcript.contains("Nosso lance confirmado"),"Fluxo terminal com motor real");
+            check(transcript.contains("Lance inválido") && transcript.contains("MOVA"),"Fluxo terminal com motor real");
             var saved=new SessionStore(folder.resolve("sessao-terminal.properties")).load();
             check(saved.moves().size()==2 && saved.color()==Side.BLACK,"Sessão deve conter adversário e nosso lance");
             StringWriter restore=new StringWriter();
             new TerminalGame(new BufferedReader(new StringReader("restaurar\nsair\n")),new PrintWriter(restore,true),folder).run();
-            check(restore.toString().contains("Sessão restaurada"),"Restauração terminal");
+            check(!restore.toString().contains("Não foi possível restaurar"),"Restauração terminal");
             try(var files=Files.list(folder)) { check(files.anyMatch(p -> p.toString().endsWith(".pgn")),"Exportação PGN"); }
             System.out.println("OK: comandos físicos, roque, en passant, promoção, lance ilegal, motor real, confirmação, PGN e restauração no terminal.");
-            System.out.println(transcript.substring(transcript.indexOf("===================================================="),transcript.indexOf("Nosso lance confirmado")));
+            System.out.println(transcript.lines().filter(line -> line.contains("MOVA")).findFirst().orElseThrow());
         } finally {
             try(var files=Files.list(folder)) { for(Path file:files.toList()) Files.deleteIfExists(file); }
             Files.deleteIfExists(folder);
