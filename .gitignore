@@ -1,0 +1,7 @@
+.venv/
+vendor/
+__pycache__/
+partidas/
+tmp/
+build/
+*.class
