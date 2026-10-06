@@ -5,6 +5,10 @@ public final class PgnVerification {
     private static void check(boolean condition,String message) { if(!condition) throw new AssertionError(message); }
     public static void main(String[] args) throws Exception {
         var examples=PgnCollection.read(Path.of("datasets/exemplo.pgn"));
+        var historical=PgnCollection.read(Path.of("datasets/historicas.pgn")).getFirst();
+        check(historical.san().size()==33,"Partida histórica completa: 33 meios-lances");
+        Board historicalBoard=new Board(); historicalBoard.loadFromFen(historical.positions().getLast());
+        check(historicalBoard.isMated(),"Partida histórica deve terminar em xeque-mate");
         check(examples.size()==2,"Coleção com várias partidas");
         Board board=new Board(); board.loadFromFen(examples.getFirst().positions().getLast());
         check(board.isMated(),"Reprodução deve alcançar o mate");

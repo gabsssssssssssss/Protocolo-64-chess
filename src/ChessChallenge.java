@@ -51,7 +51,9 @@ public final class ChessChallenge extends JFrame {
         button(side,"Nova partida",this::reset);
         button(side,"Salvar PGN",this::save);
         button(side,"Restaurar última sessão",this::restore);
-        button(side,"Estudar partidas PGN",() -> new PgnViewer().setVisible(true));
+        button(side,"Estudar partidas PGN",() -> {
+            PgnViewer viewer=new PgnViewer(); viewer.setVisible(true); viewer.load(Path.of("datasets/historicas.pgn"));
+        });
         history.setEditable(false);
         side.add(new JScrollPane(history));
         add(grid,BorderLayout.CENTER); add(side,BorderLayout.EAST);

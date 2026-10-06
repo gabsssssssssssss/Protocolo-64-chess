@@ -20,7 +20,7 @@ Não há acesso à rede durante o uso do aplicativo. Downloads ocorrem somente n
 
 Abra `estudar.bat` ou **Estudar partidas PGN** na interface. Clique em **Abrir PGN** para importar uma coleção local UTF-8 (até 20 MB e 1000 partidas). Escolha uma partida na lista; use Início/Anterior/Próximo/Fim ou Reproduzir/Pausar. A velocidade vai de 0,25 a 10 segundos entre lances e afeta apenas a reprodução visual. O tabuleiro é reconstruído com lances legais; erros de importação preservam a coleção anterior. São suportados roque, promoção e posição inicial FEN. Comentários e linhas alternativas são ignorados na reprodução; fica a linha principal.
 
-Coloque suas coleções em `datasets/` e registre sua origem/licença conforme `datasets/README.md`. Os exemplos incluídos são didáticos, sem atribuição a jogadores famosos. O visualizador funciona offline e não usa o Stockfish. O dataset ainda não é um repertório de aberturas nem treinamento do motor.
+Coloque suas coleções em `datasets/` e registre sua origem/licença conforme `datasets/README.md`. A tela abre inicialmente a Partida da Ópera de Paul Morphy, completa até o mate (33 meios-lances). Clique em **Reproduzir** para assistir; o padrão é 2 segundos por lance. `exemplo.pgn` mantém as sequências didáticas curtas. O visualizador funciona offline e não usa o Stockfish. O dataset ainda não é um repertório de aberturas nem treinamento do motor.
 
 ### Recuperação de sessão
 
