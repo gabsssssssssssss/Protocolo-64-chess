@@ -18,6 +18,11 @@ public final class PgnViewer extends JFrame {
     private final javax.swing.Timer timer=new javax.swing.Timer(2000,e -> step(1));
     private int ply=0;
     private PgnCollection.Replay current;
+    private final JButton analyse=new JButton("Analisar posição com Stockfish");
+    private final JTextArea analysis=new JTextArea(6,26);
+    private final JTabbedPane studyTabs=new JTabbedPane();
+    private long positionVersion=0,loadVersion=0;
+    private boolean analysing=false;
     public PgnViewer() {
         super("Partidas PGN • Estudo offline"); setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         JPanel side=new JPanel(); side.setLayout(new BoxLayout(side,BoxLayout.Y_AXIS));
@@ -43,7 +48,13 @@ public final class PgnViewer extends JFrame {
         side.add(new JLabel("Segundos entre lances (não é relógio de partida)")); side.add(speed);
         speed.addChangeListener(e -> { int delay=(int)(((Number)speed.getValue()).doubleValue()*1000); timer.setDelay(delay); timer.setInitialDelay(delay); });
         history.setEditable(false); history.setLineWrap(true); history.setWrapStyleWord(true);
-        side.add(new JScrollPane(history));
+        side.add(Box.createVerticalStrut(8)); side.add(analyse);
+        analyse.addActionListener(e -> analysePosition());
+        analysis.setEditable(false); analysis.setLineWrap(true); analysis.setWrapStyleWord(true);
+        analysis.setText("Pause em uma posição e consulte a análise local (2 segundos de busca).");
+        studyTabs.addTab("Lances",new JScrollPane(history));
+        studyTabs.addTab("Análise",new JScrollPane(analysis));
+        studyTabs.setMinimumSize(new Dimension(300,140)); side.add(studyTabs);
         add(boardView,BorderLayout.CENTER); add(side,BorderLayout.EAST); add(status,BorderLayout.SOUTH);
         addWindowListener(new WindowAdapter() { public void windowClosed(WindowEvent e) { timer.stop(); } });
         UiTheme.sidebar(side,430); UiTheme.style(getContentPane());
@@ -58,10 +69,12 @@ public final class PgnViewer extends JFrame {
         if(chooser.showOpenDialog(this)==JFileChooser.APPROVE_OPTION) load(chooser.getSelectedFile().toPath());
     }
     public void load(Path path) {
+        long request=++loadVersion;
         pause(); open.setEnabled(false); status.setText("Importando e validando partidas...");
         new SwingWorker<List<PgnCollection.Replay>,Void>() {
             protected List<PgnCollection.Replay> doInBackground() throws Exception { return PgnCollection.read(path); }
             protected void done() {
+                if(request!=loadVersion || !isDisplayable()) return;
                 open.setEnabled(true);
                 try {
                     var imported=get(); collection=imported; playerFilter.setText(""); filter();
@@ -77,6 +90,9 @@ public final class PgnViewer extends JFrame {
         if(filtered.isEmpty()) status.setText("Nenhuma partida corresponde ao jogador informado.");
     }
     private void draw() {
+        positionVersion++;
+        analysis.setText("Pause em uma posição e consulte a análise local (2 segundos de busca).");
+        analyse.setEnabled(current!=null && !analysing);
         Board board=new Board(); if(current!=null) board.loadFromFen(current.positions().get(ply));
         com.github.bhlangonijr.chesslib.move.Move last=null;
         if(current!=null && ply>0) {
@@ -91,6 +107,31 @@ public final class PgnViewer extends JFrame {
             for(int i=0;i<current.san().size();i++) { if(i==ply-1) text.append("▶ "); if(i%2==0) text.append(i/2+1).append(". "); text.append(current.san().get(i)).append(i%2==0 ? " " : "\n"); }
             history.setText(text.toString()); status.setText("Lance "+ply+"/"+current.san().size()+" — "+(ply==0 ? "Posição inicial" : current.san().get(ply-1)));
         }
+    }
+    private void analysePosition() {
+        if(current==null || analysing) return;
+        pause();
+        String fen=current.positions().get(ply);
+        Board board=new Board(); board.loadFromFen(fen);
+        if(board.isMated() || board.isStaleMate()) { analysis.setText(board.isMated() ? "A posição já está em xeque-mate." : "Afogamento: não existem lances legais."); return; }
+        String initial=current.positions().getFirst();
+        String moves=String.join(" ",current.uci().subList(0,ply));
+        long version=positionVersion;
+        analysing=true; analyse.setEnabled(false); analysis.setText("Preparando Stockfish e analisando a posição...");
+        studyTabs.setSelectedIndex(1);
+        new SwingWorker<String,Void>() {
+            protected String doInBackground() throws Exception {
+                try(Stockfish engine=new Stockfish(Stockfish.locate())) {
+                    return AnalysisText.format(engine.analyse(initial,moves,2000),fen);
+                }
+            }
+            protected void done() {
+                analysing=false; analyse.setEnabled(current!=null);
+                if(!isDisplayable() || version!=positionVersion) return;
+                try { analysis.setText(get()); }
+                catch(Exception e) { Throwable cause=e.getCause()==null ? e : e.getCause(); analysis.setText("Erro na análise: "+cause.getMessage()); }
+            }
+        }.execute();
     }
     public static void main(String[] args) { SwingUtilities.invokeLater(() -> {
         UiTheme.install();
@@ -107,6 +148,11 @@ public final class PgnViewer extends JFrame {
                 viewer.step(10); viewer.speed.setValue(3.0);
                 if(viewer.timer.getDelay()!=3000) throw new AssertionError("Controle de velocidade");
                 viewer.file.setText("exemplo.pgn — 2 partidas");
+                try(Stockfish engine=new Stockfish(Stockfish.locate())) {
+                    var result=engine.analyse(viewer.current.positions().getFirst(),String.join(" ",viewer.current.uci().subList(0,viewer.ply)),200);
+                    viewer.analysis.setText(AnalysisText.format(result,viewer.current.positions().get(viewer.ply)));
+                    viewer.studyTabs.setSelectedIndex(1);
+                }
                 layoutTree(viewer.getContentPane());
                 var content=viewer.getContentPane();
                 var image=new java.awt.image.BufferedImage(content.getWidth(),content.getHeight(),java.awt.image.BufferedImage.TYPE_INT_RGB);

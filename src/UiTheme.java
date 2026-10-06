@@ -9,6 +9,9 @@ public final class UiTheme {
         UIManager.put("Button.font",new Font("Segoe UI",Font.BOLD,13));
         UIManager.put("TextField.font",new Font("Segoe UI",Font.PLAIN,15));
         UIManager.put("ComboBox.font",new Font("Segoe UI",Font.PLAIN,13));
+        UIManager.put("TabbedPane.background",PANEL);
+        UIManager.put("TabbedPane.foreground",TEXT);
+        UIManager.put("TabbedPane.selected",new Color(55,78,85));
     }
     public static void style(Component component) {
         if(component instanceof JPanel panel) panel.setBackground(PANEL);

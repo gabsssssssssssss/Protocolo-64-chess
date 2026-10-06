@@ -2,9 +2,11 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.concurrent.*;
+import java.util.*;
 
 /** Comunicação UCI local. A fila permite detectar timeout e encerramento do processo. */
 public final class Stockfish implements AutoCloseable {
+    public record Analysis(String bestMove,Integer centipawns,Integer mate,int depth,List<String> line) {}
     private final Process process;
     private final BufferedWriter input;
     private final BlockingQueue<String> output = new LinkedBlockingQueue<>();
@@ -49,6 +51,41 @@ public final class Stockfish implements AutoCloseable {
     }
     public void newGame() throws Exception {
         send("ucinewgame"); send("isready"); waitFor("readyok", 10000);
+    }
+    /** Mantém o histórico do PGN, inclusive para detectar repetições. Score: lado a jogar. */
+    public Analysis analyse(String initialFen,String moves,long millis) throws Exception {
+        if(millis<1 || millis>30000 || initialFen.contains("\n") || moves.contains("\n")) throw new IllegalArgumentException("Parâmetros de análise inválidos.");
+        send("position fen " + initialFen + (moves.isBlank() ? "" : " moves " + moves));
+        send("go movetime " + millis);
+        long deadline=System.nanoTime()+TimeUnit.MILLISECONDS.toNanos(millis+5000);
+        Analysis latest=new Analysis("",null,null,0,List.of());
+        while(true) {
+            long left=deadline-System.nanoTime();
+            String message=left>0 ? output.poll(left,TimeUnit.NANOSECONDS) : null;
+            if(message==null) throw new IOException("Stockfish não respondeu à análise dentro do prazo.");
+            if(message.equals("__EXIT__")) throw new IOException("Stockfish encerrou durante a análise.");
+            if(message.startsWith("info ")) {
+                Analysis parsed=parseInfo(message);
+                if(parsed!=null) latest=parsed;
+            }
+            if(message.startsWith("bestmove ")) return new Analysis(message.split(" ")[1],latest.centipawns(),latest.mate(),latest.depth(),latest.line());
+        }
+    }
+    static Analysis parseInfo(String message) {
+        if(!message.startsWith("info ") || message.contains(" lowerbound") || message.contains(" upperbound")) return null;
+        String[] words=message.trim().split("\\s+"); Integer cp=null,mate=null; int depth=0;
+        List<String> line=List.of();
+        try {
+            for(int i=1;i<words.length;i++) {
+                if(words[i].equals("multipv") && i+1<words.length && !words[i+1].equals("1")) return null;
+                if(words[i].equals("depth") && i+1<words.length) depth=Integer.parseInt(words[++i]);
+                else if(words[i].equals("score") && i+2<words.length) {
+                    String type=words[++i]; int value=Integer.parseInt(words[++i]);
+                    if(type.equals("cp")) cp=value; else if(type.equals("mate")) mate=value;
+                } else if(words[i].equals("pv")) { line=List.of(Arrays.copyOfRange(words,i+1,words.length)); break; }
+            }
+        } catch(NumberFormatException e) { return null; }
+        return cp==null && mate==null ? null : new Analysis("",cp,mate,depth,line);
     }
     public static Path locate() throws IOException {
         try (var paths = Files.walk(Path.of("vendor/engine"))) {

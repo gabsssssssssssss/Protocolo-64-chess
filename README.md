@@ -20,6 +20,8 @@ Não há acesso à rede durante o uso do aplicativo. Downloads ocorrem somente n
 
 ### Dataset e reprodução PGN
 
+**Análise de posições:** pause a reprodução e clique em **Analisar posição com Stockfish**. O motor local busca por 2 segundos e apresenta avaliação na perspectiva das brancas, eventual mate previsto, lance sugerido, profundidade e até 10 meios-lances da linha principal em SAN. O histórico anterior da partida é enviado ao motor, inclusive a posição FEN inicial. A análise não aplica lances e não altera a partida histórica. Se você mudar de posição durante a análise, a resposta da posição anterior é descartada. A inicialização do motor pode levar tempo adicional. A avaliação é uma estimativa e não comprova qualidade de um repertório.
+
 Há uma amostra real do Magnus Carlsen em `datasets/carlsen-mundial-2021-1.pgn` (89 meios-lances, Mundial 2021). No estudo, clique em **Abrir amostra do Magnus Carlsen**. Para coleções maiores, use **Abrir PGN** e digite `Carlsen` no filtro de jogador. O filtro procura nas brancas e nas pretas, sem diferenciar maiúsculas. Fonte e licença estão em `datasets/CARLSEN-FONTE.md`.
 
 ### Uso offline
