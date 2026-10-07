@@ -21,6 +21,11 @@ public final class PgnViewer extends JFrame {
     private final JButton analyse=new JButton("Analisar posição com Stockfish");
     private final JTextArea analysis=new JTextArea(6,26);
     private final JTabbedPane studyTabs=new JTabbedPane();
+    private OpeningIndex openingIndex=new OpeningIndex(List.of());
+    private final JTextArea openings=new JTextArea(8,26);
+    private SwingWorker<OpeningIndex,Void> indexWorker;
+    private long indexVersion;
+    private final javax.swing.Timer filterDelay=new javax.swing.Timer(250,e -> filter());
     private long positionVersion=0,loadVersion=0;
     private boolean analysing=false;
     public PgnViewer() {
@@ -33,10 +38,11 @@ public final class PgnViewer extends JFrame {
         JButton carlsen=new JButton("Abrir amostra do Magnus Carlsen"); carlsen.addActionListener(e -> load(Path.of("datasets/carlsen-mundial-2021-1.pgn"))); side.add(carlsen);
         side.add(new JLabel("Filtrar jogador (ex.: Carlsen)")); side.add(playerFilter);
         playerFilter.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { filter(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { filter(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { filter(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { filterDelay.restart(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { filterDelay.restart(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { filterDelay.restart(); }
         });
+        filterDelay.setRepeats(false);
         games.setPreferredSize(new Dimension(360,32)); games.setMaximumSize(new Dimension(360,32));
         games.addActionListener(e -> { pause(); current=(PgnCollection.Replay)games.getSelectedItem(); ply=0; draw(); }); side.add(games);
         JPanel navigation=new JPanel();
@@ -54,9 +60,11 @@ public final class PgnViewer extends JFrame {
         analysis.setText("Pause em uma posição e consulte a análise local (2 segundos de busca).");
         studyTabs.addTab("Lances",new JScrollPane(history));
         studyTabs.addTab("Análise",new JScrollPane(analysis));
+        openings.setEditable(false); openings.setLineWrap(true); openings.setWrapStyleWord(true);
+        studyTabs.addTab("Aberturas",new JScrollPane(openings));
         studyTabs.setMinimumSize(new Dimension(300,140)); side.add(studyTabs);
         add(boardView,BorderLayout.CENTER); add(side,BorderLayout.EAST); add(status,BorderLayout.SOUTH);
-        addWindowListener(new WindowAdapter() { public void windowClosed(WindowEvent e) { timer.stop(); } });
+        addWindowListener(new WindowAdapter() { public void windowClosed(WindowEvent e) { timer.stop(); filterDelay.stop(); if(indexWorker!=null) indexWorker.cancel(true); } });
         UiTheme.sidebar(side,430); UiTheme.style(getContentPane());
         status.setBorder(BorderFactory.createEmptyBorder(10,16,10,16)); setMinimumSize(new Dimension(980,700));
         draw(); pack(); setLocationRelativeTo(null);
@@ -77,7 +85,7 @@ public final class PgnViewer extends JFrame {
                 if(request!=loadVersion || !isDisplayable()) return;
                 open.setEnabled(true);
                 try {
-                    var imported=get(); collection=imported; playerFilter.setText(""); filter();
+                    var imported=get(); collection=imported; playerFilter.setText(""); filterDelay.stop(); filter();
                     file.setText(path.getFileName()+" — "+imported.size()+" partidas"); draw();
                 } catch(Exception e) { Throwable cause=e.getCause()==null ? e : e.getCause(); status.setText("Falha de importação: "+cause.getMessage()); }
             }
@@ -85,15 +93,32 @@ public final class PgnViewer extends JFrame {
     }
     private void filter() {
         pause(); var filtered=PgnCollection.filterPlayer(collection,playerFilter.getText());
+        if(indexWorker!=null) indexWorker.cancel(true);
+        long request=++indexVersion;
+        openingIndex=new OpeningIndex(List.of());
         games.setModel(new DefaultComboBoxModel<>(filtered.toArray(PgnCollection.Replay[]::new)));
         current=filtered.isEmpty() ? null : filtered.getFirst(); ply=0; draw();
         if(filtered.isEmpty()) status.setText("Nenhuma partida corresponde ao jogador informado.");
+        else openings.setText("Preparando estatísticas de abertura...");
+        indexWorker=new SwingWorker<OpeningIndex,Void>() {
+            protected OpeningIndex doInBackground() { return new OpeningIndex(filtered); }
+            protected void done() {
+                if(request!=indexVersion || !isDisplayable() || isCancelled()) return;
+                try {
+                    openingIndex=get(); Board board=new Board();
+                    if(current!=null) board.loadFromFen(current.positions().get(ply));
+                    openings.setText(openingIndex.describe(board));
+                } catch(Exception e) { openings.setText("Não foi possível gerar as estatísticas da coleção."); }
+            }
+        };
+        indexWorker.execute();
     }
     private void draw() {
         positionVersion++;
         analysis.setText("Pause em uma posição e consulte a análise local (2 segundos de busca).");
         analyse.setEnabled(current!=null && !analysing);
         Board board=new Board(); if(current!=null) board.loadFromFen(current.positions().get(ply));
+        openings.setText(openingIndex.describe(board));
         com.github.bhlangonijr.chesslib.move.Move last=null;
         if(current!=null && ply>0) {
             Board before=new Board(); before.loadFromFen(current.positions().get(ply-1));
@@ -139,6 +164,7 @@ public final class PgnViewer extends JFrame {
         if(args.length>0 && args[0].equals("--preview")) {
             try {
                 var imported=PgnCollection.read(Path.of("datasets/exemplo.pgn"));
+                viewer.openingIndex=new OpeningIndex(imported);
                 viewer.games.setModel(new DefaultComboBoxModel<>(imported.toArray(PgnCollection.Replay[]::new)));
                 viewer.current=imported.getFirst(); viewer.step(2);
                 viewer.step(-1);

@@ -15,3 +15,5 @@ java -cp 'build;vendor/*' AnalysisVerification
 if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação da análise.' }
 java -cp 'build;vendor/*' TerminalVerification
 if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação do modo terminal.' }
+java -cp 'build;vendor/*' OpeningVerification
+if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação das estatísticas de abertura.' }

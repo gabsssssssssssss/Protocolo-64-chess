@@ -36,6 +36,10 @@ Não há acesso à rede durante o uso do aplicativo. Downloads ocorrem somente n
 
 ### Dataset e reprodução PGN
 
+**Estatísticas de abertura:** a aba **Aberturas** consulta a coleção carregada (ou o subconjunto do filtro de jogador). Mostra frequência e vitórias/empates/derrotas do lado a jogar. O índice considera os primeiros 24 meios-lances de cada sequência e deduplica sequências completas idênticas, contando uma posição no máximo uma vez por sequência. A chave preserva peças, lado, roque e en passant legal; ignora contadores de lances para reconhecer transposições. Frequência não é qualidade, e o resultado de uma partida não prova que seu lance de abertura foi bom. Esta etapa não altera as decisões do motor nem as mensagens do terminal de jogo.
+
+Para gerar CSV local, execute `powershell -ExecutionPolicy Bypass -File repertorio.ps1`. Por padrão usa a amostra do Carlsen. Em PowerShell, `./repertorio.ps1 -Arquivos @('datasets/carlsen-mundial-2021-1.pgn','datasets/historicas.pgn')` combina coleções; os arquivos ficam em `partidas/repertorio-...csv`. A atribuição/licença dos dados de origem continua aplicável aos dados derivados.
+
 **Análise de posições:** pause a reprodução e clique em **Analisar posição com Stockfish**. O motor local busca por 2 segundos e apresenta avaliação na perspectiva das brancas, eventual mate previsto, lance sugerido, profundidade e até 10 meios-lances da linha principal em SAN. O histórico anterior da partida é enviado ao motor, inclusive a posição FEN inicial. A análise não aplica lances e não altera a partida histórica. Se você mudar de posição durante a análise, a resposta da posição anterior é descartada. A inicialização do motor pode levar tempo adicional. A avaliação é uma estimativa e não comprova qualidade de um repertório.
 
 Há uma amostra real do Magnus Carlsen em `datasets/carlsen-mundial-2021-1.pgn` (89 meios-lances, Mundial 2021). No estudo, clique em **Abrir amostra do Magnus Carlsen**. Para coleções maiores, use **Abrir PGN** e digite `Carlsen` no filtro de jogador. O filtro procura nas brancas e nas pretas, sem diferenciar maiúsculas. Fonte e licença estão em `datasets/CARLSEN-FONTE.md`.

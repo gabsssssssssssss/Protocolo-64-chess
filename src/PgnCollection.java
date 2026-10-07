@@ -6,7 +6,7 @@ import java.util.*;
 
 /** Importação offline para estudo; nenhuma alteração na escolha de lances do motor. */
 public final class PgnCollection {
-    public record Replay(String title,String white,String black,List<String> positions,List<String> san,List<String> uci) {
+    public record Replay(String title,String white,String black,String result,List<String> positions,List<String> san,List<String> uci) {
         @Override public String toString() { return title; }
     }
     public static List<Replay> read(Path path) throws Exception {
@@ -31,7 +31,7 @@ public final class PgnCollection {
                 String white=game.getWhitePlayer()==null ? "?" : game.getWhitePlayer().getName();
                 String black=game.getBlackPlayer()==null ? "?" : game.getBlackPlayer().getName();
                 String result=game.getResult()==null ? "*" : game.getResult().getDescription();
-                games.add(new Replay((games.size()+1)+". "+white+" × "+black+" — "+result+" — "+game.getDate(),white,black,List.copyOf(positions),List.of(moves.toSanArray()),moves.stream().map(m -> m.toString().toLowerCase(Locale.ROOT)).toList()));
+                games.add(new Replay((games.size()+1)+". "+white+" × "+black+" — "+result+" — "+game.getDate(),white,black,result,List.copyOf(positions),List.of(moves.toSanArray()),moves.stream().map(m -> m.toString().toLowerCase(Locale.ROOT)).toList()));
             }
         }
         if(games.isEmpty()) throw new IllegalArgumentException("Nenhuma partida PGN encontrada.");
