@@ -20,13 +20,13 @@ No VS Code, pressione **Ctrl+Shift+B** para compilar e iniciar o jogo no termina
 
 1. Escolha `brancas` ou `pretas` (ou `restaurar` para recuperar a sessão do terminal).
 2. Na vez do adversário, registre a origem/destino: `e7e5`, `e7 e5` ou SAN como `Nf3`, `O-O`. Para promoção por coordenadas, use `e7e8q` (q=dama, r=torre, b=bispo, n=cavalo).
-3. Na nossa vez, o motor calcula automaticamente. A gestão própria usa um orçamento interno estimado, iniciado em 25 minutos, sem perguntar o tempo.
+3. Na nossa vez, o motor calcula automaticamente por até 30 segundos. Não existe relógio acumulado nem derrota por tempo dentro do aplicativo.
 4. Leia a instrução **MOVA O PEÃO DE E2 PARA E4**. Captura, roque, en passant e promoção têm instruções adicionais.
-5. Execute no tabuleiro físico, acione o relógio e digite `feito`. Só então o programa registra nosso lance. `cancelar` volta para recalcular; `sair` encerra sem confirmar a recomendação.
+5. Execute no tabuleiro físico e digite `feito`. Só então o programa registra nosso lance. `cancelar` volta para recalcular; `sair` encerra sem confirmar a recomendação.
 
-Comandos no prompt de lance adversário: `tabuleiro`, `historico`, `desfazer`, `salvar`, `sair`. `desfazer` exige corrigir também as peças físicas e não devolve tempo ao orçamento. A sessão fica em `partidas/sessao-terminal.properties`, separada da interface gráfica. O orçamento desconta desde o início do cálculo até digitar `feito`, incluindo movimentação manual e inicialização do motor. Não mede o tempo gasto digitando o lance adversário nem o período com o programa fechado; portanto é uma estimativa e não substitui o relógio físico. Se sair ou ocorrer uma falha antes de `feito`, o último lance sugerido não estará no histórico; confira as peças antes de restaurar. A recuperação não altera a regra do evento sobre derrota por falha.
+Comandos no prompt de lance adversário: `tabuleiro`, `historico`, `desfazer`, `salvar`, `sair`. `desfazer` exige corrigir também as peças físicas. A sessão fica em `partidas/sessao-terminal.properties`, separada da interface gráfica, marcada como `sem-limite`. Sessões antigas continuam restauráveis, inclusive com relógio zerado; o valor antigo é ignorado. Se sair ou ocorrer uma falha antes de `feito`, o último lance sugerido não estará no histórico; confira as peças antes de restaurar.
 
-Tudo funciona localmente usando o mesmo Stockfish e componente de gestão de tempo da interface. O dataset de estudo não participa da escolha dos lances nesta versão.
+Tudo funciona localmente usando o mesmo Stockfish da interface. O dataset de estudo não participa da escolha dos lances nesta versão.
 
 O tabuleiro usa tema escuro, moldura com detalhe dourado, casas verde/marfim e peças vetoriais próprias com gradientes e contornos. Não depende de fontes de símbolos, imagens externas ou downloads para desenhar as peças. Inclui coordenadas externas, destaque do último lance, indicação de seleção, hover e destinos legais (ponto para casa vazia, anel para captura). O mesmo componente é usado na partida, no estudo PGN e no confronto automático.
 
@@ -34,7 +34,7 @@ O tabuleiro usa tema escuro, moldura com detalhe dourado, casas verde/marfim e p
 2. Abra `iniciar.bat`. Ele compila e abre a interface.
 3. Escolha nossa cor antes do primeiro lance. Com brancas, clique em **Calcular nosso lance**. Com pretas, registre primeiro o lance adversário.
 4. Registre o adversário clicando na origem e no destino, ou digitando coordenadas como `e2e4`. Roque curto branco: `e1g1`; promoção: `e7e8q`.
-5. Atualize **nosso tempo restante** pelo relógio físico antes de calcular. O campo não é um cronômetro oficial: só desconta a duração da operação de cálculo, incluindo a inicialização do motor.
+5. Clique em **Calcular nosso lance**. A busca usa até 30 segundos por lance; a partida não tem relógio interno nem campo de tempo restante.
 6. Mova a peça indicada no tabuleiro físico. A posição da tela já inclui o lance calculado.
 7. Salve o PGN para revisar a partida; os arquivos ficam em `partidas/`.
 
@@ -62,16 +62,16 @@ Coloque suas coleções em `datasets/` e registre sua origem/licença conforme `
 
 ### Recuperação de sessão
 
-A interface salva `partidas/sessao.properties` após registrar/desfazer lances, iniciar análise, reiniciar a partida e fechar normalmente. Para recuperar após reabrir, clique em **Restaurar última sessão**. O histórico é validado antes de substituir a partida. Confirme a posição no tabuleiro físico e atualize o relógio: o tempo salvo não inclui o período em que o programa esteve fechado nem o tempo de operação manual. Iniciar uma nova partida substitui a sessão; exporte o PGN para preservar partidas anteriores. Esta função não altera a regra do campeonato sobre derrota por falha.
+A interface salva `partidas/sessao.properties` após registrar/desfazer lances, iniciar análise, reiniciar a partida e fechar normalmente. Para recuperar após reabrir, clique em **Restaurar sessão**. O histórico é validado antes de substituir a partida. Confirme a posição no tabuleiro físico. Iniciar uma nova partida substitui a sessão; exporte o PGN para preservar partidas anteriores. Sessões antigas são aceitas, mas seu relógio é ignorado.
 
-Se o cálculo consumir todo o tempo informado, o lance não é aplicado. O relógio físico continua sendo a referência oficial.
+O limite de cálculo por lance permite ao motor concluir a busca; não encerra a partida. O controle de tempo externo do campeonato continua sendo definido pela organização.
 
 - `ChessChallenge.java`: interface, histórico, entrada de lances legais e exportação PGN.
 - `Stockfish.java`: transporte UCI, histórico completo enviado ao motor, limites de espera e encerramento de processo.
-- `TimeManager.java`: política própria experimental que determina `go movetime`. Reserva tempo operacional, estima um horizonte de lances e ajusta o orçamento conforme capturas, promoções e xeque. Limita cada cálculo a 30 segundos e 8% do tempo restante. Lance único recebe orçamento reduzido.
+- `TimeManager.java`: política própria experimental, mantida apenas no comparador de motores. Não participa das partidas do terminal nem da interface, que usam busca fixa de até 30 segundos por lance.
 - `Verification.java`: verificações de regras especiais, perft e integração com motor real.
 
-A busca e a avaliação do Stockfish não foram alteradas. A política Java substitui o orçamento de tempo automático pela instrução UCI `movetime`; não é um fork do núcleo C++. O componente influencia as partidas, mas a equipe precisa compreender, revisar, desenvolver e defender sua implementação. A aceitação da gestão externa como modificação significativa deve ser confirmada pela banca. Não declarar o Stockfish nem a biblioteca como criação da equipe.
+A busca e a avaliação do Stockfish não foram alteradas. Com a retirada do relógio, a gestão própria deixou de atuar nas partidas interativas; portanto esta configuração ainda precisa de um componente decisório próprio funcional para satisfazer a exigência de modificação significativa do FAQ. O comparador mantém a política experimental e os relógios exclusivamente para testes controlados. Não declarar o Stockfish nem a biblioteca como criação da equipe.
 
 Código inicial elaborado com assistência do Codex. Mantenham um registro transparente das contribuições e sigam eventuais orientações da faculdade sobre ferramentas de IA.
 

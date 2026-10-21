@@ -10,12 +10,13 @@ public final class SessionStore {
     private final Path path;
     public SessionStore(Path path) { this.path=path; }
     public void save(Side color,String clock,List<Move> moves) throws IOException {
-        try {
+        try { if(!"sem-limite".equals(clock)) {
             String[] parts=clock.trim().split(":");
             if(parts.length!=2) throw new IllegalArgumentException();
             int minutes=Integer.parseInt(parts[0]), seconds=Integer.parseInt(parts[1]);
             if(minutes<0 || seconds<0 || seconds>59) throw new IllegalArgumentException();
             clock=String.format(Locale.ROOT,"%02d:%02d",minutes,seconds);
+        }
         } catch(RuntimeException e) { throw new IOException("Relógio inválido; sessão anterior preservada.",e); }
         Properties values=new Properties();
         values.setProperty("version","1"); values.setProperty("color",color.name());
@@ -36,7 +37,7 @@ public final class SessionStore {
             if(!"1".equals(values.getProperty("version"))) throw new IllegalArgumentException("Versão de sessão desconhecida.");
             Side color=Side.valueOf(values.getProperty("color",""));
             String clock=values.getProperty("clock","");
-            if(!clock.matches("[0-9]+:[0-5][0-9]")) throw new IllegalArgumentException("Relógio salvo inválido.");
+            if(!clock.equals("sem-limite") && !clock.matches("[0-9]+:[0-5][0-9]")) throw new IllegalArgumentException("Relógio salvo inválido.");
             Board board=new Board(); ArrayList<Move> moves=new ArrayList<>();
             String text=values.getProperty("moves","").trim();
             if(!text.isEmpty()) for(String uci:text.split("\\s+")) {

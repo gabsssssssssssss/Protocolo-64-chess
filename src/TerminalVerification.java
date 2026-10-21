@@ -15,18 +15,23 @@ public final class TerminalVerification {
         check(MoveInstruction.describe(board,TerminalGame.parseMove(board,"e5d6")).contains("peão adversário de D5"),"En passant");
         board.loadFromFen("4k3/P7/8/8/8/8/8/4K3 w - - 0 1");
         check(MoveInstruction.describe(board,TerminalGame.parseMove(board,"a7a8n")).contains("pelo cavalo"),"Subpromoção");
-        check(TerminalGame.parseClock("25:00")==1500000,"Tempo físico");
         Path folder=Files.createTempDirectory("terminal-verification-");
         try {
             StringWriter buffer=new StringWriter();
-            new TerminalGame(new BufferedReader(new StringReader("pretas\ne2e5\ne2e4\nfeito\nsalvar\nsair\n")),new PrintWriter(buffer,true),folder,10000).run();
+            new TerminalGame(new BufferedReader(new StringReader("pretas\ne2e5\ne2e4\nfeito\nsalvar\nsair\n")),new PrintWriter(buffer,true),folder,200).run();
             String transcript=buffer.toString();
             check(transcript.contains("Lance inválido") && transcript.contains("MOVA"),"Fluxo terminal com motor real");
             var saved=new SessionStore(folder.resolve("sessao-terminal.properties")).load();
             check(saved.moves().size()==2 && saved.color()==Side.BLACK,"Sessão deve conter adversário e nosso lance");
+            check(saved.clock().equals("sem-limite") && !transcript.contains("esgotado"),"Partida sem relógio");
+            new SessionStore(folder.resolve("sessao-terminal.properties")).save(saved.color(),"00:00",saved.moves());
             StringWriter restore=new StringWriter();
             new TerminalGame(new BufferedReader(new StringReader("restaurar\nsair\n")),new PrintWriter(restore,true),folder).run();
             check(!restore.toString().contains("Não foi possível restaurar"),"Restauração terminal");
+            StringWriter resumed=new StringWriter();
+            new SessionStore(folder.resolve("sessao-terminal.properties")).save(Side.WHITE,"00:00",java.util.List.of());
+            new TerminalGame(new BufferedReader(new StringReader("restaurar\nfeito\nsair\n")),new PrintWriter(resumed,true),folder,200).run();
+            check(resumed.toString().contains("MOVA") && !resumed.toString().contains("esgotado"),"Sessão antiga zerada deve permitir jogar sem relógio");
             try(var files=Files.list(folder)) { check(files.anyMatch(p -> p.toString().endsWith(".pgn")),"Exportação PGN"); }
             System.out.println("OK: comandos físicos, roque, en passant, promoção, lance ilegal, motor real, confirmação, PGN e restauração no terminal.");
             System.out.println(transcript.lines().filter(line -> line.contains("MOVA")).findFirst().orElseThrow());

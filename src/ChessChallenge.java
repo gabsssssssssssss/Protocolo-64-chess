@@ -12,9 +12,10 @@ public final class ChessChallenge extends JFrame {
     private final ArrayList<Move> moves = new ArrayList<>();
     private final BoardView boardView = new BoardView();
     private final JComboBox<String> color = new JComboBox<>(new String[]{"Brancas", "Pretas"});
-    private final JTextField clock = new JTextField("25:00"), entry = new JTextField();
+    private final JTextField entry = new JTextField();
+    private long searchMillis=30_000;
     private final JTextArea history = new JTextArea(12, 25);
-    private final JLabel status = new JLabel("Escolha nossa cor. O relógio físico é a referência.");
+    private final JLabel status = new JLabel("Escolha nossa cor. Partida sem limite de tempo.");
     private Stockfish engine;
     private Square selected;
     private boolean busy;
@@ -33,7 +34,6 @@ public final class ChessChallenge extends JFrame {
         JLabel title=new JLabel("CHESS CHALLENGE"); title.setFont(new Font("Segoe UI",Font.BOLD,23)); side.add(title);
         side.add(new JLabel("● LOCAL / OFFLINE")); side.add(Box.createVerticalStrut(12));
         side.add(new JLabel("Nossa cor")); side.add(color);
-        side.add(new JLabel("Tempo restante MM:SS — atualize pelo relógio físico")); side.add(clock);
         button(side,"Calcular nosso lance",this::calculate);
         side.add(new JLabel("Lance adversário: e2e4 (roque: e1g1)")); side.add(entry);
         entry.addActionListener(e -> submit());
@@ -76,7 +76,7 @@ public final class ChessChallenge extends JFrame {
         Move latest=moves.isEmpty() ? null : moves.getLast();
         boardView.display(board,ours(),selected,latest,!busy && !over() && board.getSideToMove()!=ours());
         color.setEnabled(moves.isEmpty() && !busy);
-        controls.forEach(b -> b.setEnabled(!busy)); entry.setEnabled(!busy); clock.setEnabled(!busy);
+        controls.forEach(b -> b.setEnabled(!busy)); entry.setEnabled(!busy);
         StringBuilder text=new StringBuilder();
         for(int i=0;i<moves.size();i++) { if(i%2==0) text.append(i/2+1).append(". "); text.append(moves.get(i)).append(i%2==0 ? " " : "\n"); }
         history.setText(text.toString());
@@ -120,24 +120,15 @@ public final class ChessChallenge extends JFrame {
         if(busy || over()) return;
         if(board.getSideToMove()!=ours()) { status.setText("Registre primeiro o lance adversário."); return; }
         try {
-            String[] parts=clock.getText().trim().split(":");
-            if(parts.length!=2) throw new IllegalArgumentException("Use MM:SS no relógio.");
-            int min=Integer.parseInt(parts[0]),sec=Integer.parseInt(parts[1]);
-            if(min<0 || sec<0 || sec>59) throw new IllegalArgumentException("Tempo inválido.");
-            long remaining=(min*60L+sec)*1000;
-            var budget=TimeManager.allocate(board,remaining);
             checkpoint();
             String position=String.join(" ",moves.stream().map(m -> m.toString().toLowerCase(Locale.ROOT)).toList());
             busy=true; selected=null; draw();
-            status.setText("Analisando por até "+budget.millis()/1000.0+"s. "+budget.reason());
+            status.setText("Calculando nosso lance...");
             new SwingWorker<String,Void>() {
-                long elapsed;
                 protected String doInBackground() throws Exception {
-                    long start=System.nanoTime();
                     try {
                         if(engine==null) engine=new Stockfish(Stockfish.locate());
-                        String result=engine.play(position,budget.millis());
-                        elapsed=(System.nanoTime()-start)/1000000;
+                        String result=engine.play(position,searchMillis);
                         return result;
                     } catch(Exception e) { if(engine!=null) engine.close(); engine=null; throw e; }
                 }
@@ -145,14 +136,8 @@ public final class ChessChallenge extends JFrame {
                     busy=false;
                     try {
                         String result=get();
-                        long left=Math.max(0,(remaining-elapsed)/1000);
-                        clock.setText(String.format("%02d:%02d",left/60,left%60));
-                        if(elapsed>=remaining) {
-                            status.setText("Tempo informado esgotado durante o cálculo. Lance não aplicado; confira o relógio físico.");
-                            checkpoint(); draw(); return;
-                        }
                         push(legal(result));
-                        status.setText("Jogue "+result.substring(0,2)+" → "+result.substring(2)+". Atualize o tempo pelo relógio físico.");
+                        status.setText("Jogue "+result.substring(0,2)+" → "+result.substring(2)+".");
                     } catch(Exception e) { error(e.getCause()!=null ? e.getCause() : e); }
                     draw();
                 }
@@ -163,13 +148,13 @@ public final class ChessChallenge extends JFrame {
         if(busy || moves.isEmpty()) return;
         board.undoMove(); moves.remove(moves.size()-1); selected=null;
         lastMove=moves.isEmpty() ? "" : moves.getLast().toString(); draw();
-        status.setText("Lance desfeito. Ajuste o relógio físico.");
+        status.setText("Lance desfeito. Confira o tabuleiro físico.");
         checkpoint();
     }
     private void reset() {
         if(busy) return;
         if(!moves.isEmpty() && JOptionPane.showConfirmDialog(this,"Descartar a partida? Salve o PGN antes.","Nova partida",JOptionPane.YES_NO_OPTION)!=JOptionPane.YES_OPTION) return;
-        board.loadFromFen(new Board().getFen()); moves.clear(); selected=null; lastMove=""; clock.setText("25:00");
+        board.loadFromFen(new Board().getFen()); moves.clear(); selected=null; lastMove="";
         // Novo processo garante limpeza de estado entre partidas sem bloquear a interface em handshake.
         if(engine!=null) { engine.close(); engine=null; }
         draw(); status.setText("Nova partida. Escolha nossa cor.");
@@ -189,7 +174,7 @@ public final class ChessChallenge extends JFrame {
     }
     private void error(Throwable e) { status.setText("Erro: "+e.getMessage()); }
     private void checkpoint() {
-        try { session.save(ours(),clock.getText().trim(),moves); }
+        try { session.save(ours(),"sem-limite",moves); }
         catch(Exception e) { status.setText("Falha ao salvar sessão: "+e.getMessage()+". Salve o PGN e confira o disco."); }
     }
     private void restore() {
@@ -202,10 +187,10 @@ public final class ChessChallenge extends JFrame {
         board.loadFromFen(new Board().getFen()); moves.clear();
         for(Move move:saved.moves()) { board.doMove(move,true); moves.add(move); }
         color.setSelectedIndex(saved.color()==Side.WHITE ? 0 : 1);
-        clock.setText(saved.clock()); selected=null; entry.setText("");
+        selected=null; entry.setText("");
         lastMove=moves.isEmpty() ? "" : moves.getLast().toString();
         if(engine!=null) { engine.close(); engine=null; }
-        draw(); status.setText("Sessão restaurada. Confira posição e ajuste o tempo pelo relógio físico antes de continuar.");
+        draw(); status.setText("Sessão restaurada. Confira a posição no tabuleiro físico.");
     }
     public static void main(String[] args) {
         UiTheme.install();
@@ -231,7 +216,7 @@ public final class ChessChallenge extends JFrame {
         });
     }
     private void testInterface() {
-        clock.setText("00:05");
+        searchMillis=200;
         calculate();
         if(!busy || entry.isEnabled()) { System.err.println("Falha: interface não bloqueou entrada durante cálculo."); dispose(); System.exit(1); }
         long deadline=System.nanoTime()+30_000_000_000L;
