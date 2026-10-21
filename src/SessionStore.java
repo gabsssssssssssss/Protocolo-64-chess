@@ -8,7 +8,13 @@ import java.util.*;
 public final class SessionStore {
     public record Session(Side color, String clock, List<Move> moves) {}
     private final Path path;
-    public SessionStore(Path path) { this.path=path; }
+    @FunctionalInterface interface Mover { void move(Path from,Path to,boolean atomic) throws IOException; }
+    private final Mover mover;
+    public SessionStore(Path path) { this(path,(from,to,atomic) -> {
+        if(atomic) Files.move(from,to,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);
+        else Files.move(from,to,StandardCopyOption.REPLACE_EXISTING);
+    }); }
+    SessionStore(Path path,Mover mover) { this.path=path.toAbsolutePath().normalize(); this.mover=mover; }
     public void save(Side color,String clock,List<Move> moves) throws IOException {
         try { if(!"sem-limite".equals(clock)) {
             String[] parts=clock.trim().split(":");
@@ -26,9 +32,22 @@ public final class SessionStore {
         Path temporary=Files.createTempFile(path.toAbsolutePath().getParent(),"session-",".tmp");
         try {
             try(var writer=Files.newBufferedWriter(temporary)) { values.store(writer,"Chess Challenge - sessao local"); }
-            try { Files.move(temporary,path,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING); }
-            catch(AtomicMoveNotSupportedException e) { Files.move(temporary,path,StandardCopyOption.REPLACE_EXISTING); }
-        } finally { Files.deleteIfExists(temporary); }
+        } catch(IOException e) { Files.deleteIfExists(temporary); throw e; }
+        IOException failure=null;
+        for(int attempt=0;attempt<3;attempt++) {
+            try {
+                try { mover.move(temporary,path,true); }
+                // No Windows, ATOMIC_MOVE pode recusar substituir um destino existente.
+                catch(FileSystemException e) { mover.move(temporary,path,false); }
+                return;
+            } catch(IOException e) {
+                failure=e;
+                if(attempt<2) try { Thread.sleep(50L*(attempt+1)); }
+                catch(InterruptedException interrupted) { Thread.currentThread().interrupt(); break; }
+            }
+        }
+        // Preserva o snapshot completo se um bloqueio impedir todas as tentativas.
+        throw new IOException("Falha ao atualizar "+path+". Cópia recuperável preservada em "+temporary+". "+failure.getMessage(),failure);
     }
     public Session load() throws IOException {
         Properties values=new Properties();

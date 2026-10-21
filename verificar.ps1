@@ -5,6 +5,8 @@ javac -encoding UTF-8 -cp 'vendor/*' -d build src/*.java
 if ($LASTEXITCODE -ne 0) { throw 'Falha de compilação.' }
 java -cp 'build;vendor/*' Verification --engine
 if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação.' }
+java -cp 'build;vendor/*' SessionVerification
+if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação do salvamento.' }
 java -cp 'build;vendor/*' ChessChallenge --ui-test
 if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação da interface.' }
 java -cp 'build;vendor/*' PgnVerification

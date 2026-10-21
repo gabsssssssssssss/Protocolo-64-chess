@@ -66,6 +66,8 @@ A interface salva `partidas/sessao.properties` após registrar/desfazer lances, 
 
 O limite de cálculo por lance permite ao motor concluir a busca; não encerra a partida. O controle de tempo externo do campeonato continua sendo definido pela organização.
 
+O salvamento usa caminhos absolutos e tenta substituição atômica, com alternativa de substituição normal para falhas do sistema de arquivos no Windows e até três tentativas para bloqueios transitórios. Se todas falharem, a mensagem informa o caminho de um arquivo `session-*.tmp` preservado com a sessão nova completa. Guarde essa cópia para recuperação; não a apague. A alternativa de substituição normal não oferece a mesma garantia contra interrupções que uma operação atômica.
+
 - `ChessChallenge.java`: interface, histórico, entrada de lances legais e exportação PGN.
 - `Stockfish.java`: transporte UCI, histórico completo enviado ao motor, limites de espera e encerramento de processo.
 - `TimeManager.java`: política própria experimental, mantida apenas no comparador de motores. Não participa das partidas do terminal nem da interface, que usam busca fixa de até 30 segundos por lance.
