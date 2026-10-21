@@ -49,8 +49,12 @@ public final class TerminalGame {
                     var budget=TimeManager.allocateForPosition(board);
                     String reply;
                     try {
-                        if(engine==null) engine=new Stockfish(Stockfish.locate());
-                        reply=engine.play(String.join(" ",moves.stream().map(m -> m.toString().toLowerCase(Locale.ROOT)).toList()),Math.min(searchMillis,budget.millis()));
+                        var mate=TacticalSearch.mateInOne(board);
+                        if(mate.isPresent()) reply=mate.get().toString().toLowerCase(Locale.ROOT);
+                        else {
+                            if(engine==null) engine=new Stockfish(Stockfish.locate());
+                            reply=engine.play(String.join(" ",moves.stream().map(m -> m.toString().toLowerCase(Locale.ROOT)).toList()),Math.min(searchMillis,budget.millis()));
+                        }
                     } catch(Exception e) {
                         if(engine!=null) engine.close(); engine=null;
                         output.println("Falha no motor: "+e.getMessage());

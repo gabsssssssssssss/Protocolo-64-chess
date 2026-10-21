@@ -4,6 +4,8 @@ Primeira versão local de treinamento. Requer Windows x64 e JDK 21 ou superior; 
 
 ## Configuração de força e diagnóstico
 
+Antes de consultar o Stockfish, o terminal e a interface executam `TacticalSearch.mateInOne`: uma busca própria de um lance que simula os movimentos legais e seleciona um xeque-mate confirmado, se existir. Não confunde afogamento com mate e considera promoções. Na ausência de mate imediato, a decisão segue com Stockfish e a gestão própria de cálculo. Isso permite concluir mates imediatos sem inicializar nem aguardar o processo externo; não comprova aumento de Elo, pois o Stockfish também encontra esses mates.
+
 O motor usa 512 MB de Hash (antes 256 MB) e até 4 threads, conforme a quantidade de processadores lógicos. Skill Level 20, UCI_LimitStrength=false e MultiPV=1 são definidos explicitamente; esses três valores já eram os padrões do Stockfish fornecido, portanto não representam aumento de força por si mesmos. A memória de busca é mantida entre lances da mesma sessão. O aumento de Hash oferece mais espaço à tabela de busca, mas não comprova ganho de força e não aumenta o limite de 30 segundos por lance.
 
 Para experimentar recursos diferentes, a execução Java aceita `-Dchess.threads=N` (1 até o número de processadores lógicos) e `-Dchess.hashMb=N` (16 a 2048 MB), antes de `-cp`. Mais threads não garantem melhor desempenho, especialmente executando dois motores simultaneamente. Compare configurações com o mesmo controle de tempo antes do campeonato.
@@ -71,13 +73,22 @@ O salvamento usa caminhos absolutos e tenta substituição atômica, com alterna
 - `ChessChallenge.java`: interface, histórico, entrada de lances legais e exportação PGN.
 - `Stockfish.java`: transporte UCI, histórico completo enviado ao motor, limites de espera e encerramento de processo.
 - `TimeManager.java`: a política `allocateForPosition` funciona no terminal e na interface e escolhe o orçamento por fase, capturas, xeque e promoção, com teto de 30 segundos e 100 ms quando só existe um lance legal. A política antiga `allocate(board,remaining)` permanece exclusiva do comparador.
+- `TacticalSearch.java`: seleção própria exata de mate em um lance, funcionando antes do Stockfish nos modos interativos e no comparador novo.
 - `Verification.java`: verificações de regras especiais, perft e integração com motor real.
 
-A busca e a avaliação do Stockfish não foram alteradas. A contribuição decisória proposta é a gestão externa do tempo de cálculo por posição, funcional nas partidas interativas, sem relógio acumulado. Consulte `DEFESA-TECNICA.md` para a fórmula, justificativas, limites, demonstração e respostas para a arguição. É necessário confirmar com a organização a aceitação dessa abordagem e tratar com transparência a assistência de IA; não declarar conformidade integral nem autoria da equipe sobre o Stockfish e a chesslib.
+A busca e a avaliação internas do Stockfish não foram alteradas. As contribuições decisórias propostas são a seleção externa de mate imediato e a gestão do tempo de cálculo por posição, funcionais nas partidas interativas, sem relógio acumulado. Consulte `DEFESA-TECNICA.md` para os algoritmos, justificativas, limites, demonstração e respostas para a arguição. É necessário confirmar com a organização a aceitação dessa abordagem e tratar com transparência a assistência de IA; não declarar conformidade integral nem autoria da equipe sobre o Stockfish e a chesslib.
 
 Código inicial elaborado com assistência do Codex. Mantenham um registro transparente das contribuições e sigam eventuais orientações da faculdade sobre ferramentas de IA.
 
 ## Verificação
+
+### Comparar a configuração atual com busca fixa
+
+Execute `powershell -ExecutionPolicy Bypass -File testar-forca.ps1 -Milissegundos 1000 -Aberturas 3`. São seis partidas, com cores invertidas em cada abertura. A implementação atual (mate imediato + orçamento por posição) enfrenta Stockfish com orçamento fixo por lance. Até seis aberturas podem ser selecionadas: aberta, Siciliana, Gambito da Dama, Indiana, Francesa e Caro-Kann. As aberturas são predefinidas, sem download nem treinamento com as partidas enviadas pelo usuário.
+
+O teto de 1000 ms escala proporcionalmente a política normal de até 30000 ms. Para executar com o teto real, use `-Milissegundos 30000`, mas isso pode levar horas. O padrão limita a 200 meios-lances; altere com `-LimiteMeiosLances 400`. O teste automático tem apenas limite por busca, não relógio acumulado, e não muda as partidas do terminal.
+
+Os arquivos ficam em `partidas/teste-posicao-.../`: PGN atualizado a cada lance, CSV com decisões e duração, configuração e resumo de vitórias/empates/derrotas. Partidas limitadas são marcadas `*` e contadas separadamente, nunca como empate. Os dois lados têm o mesmo teto por lance e os mesmos recursos de motor, mas o lado fixo pode consumir mais cálculo; não há igualdade de tempo total de CPU. Poucas partidas ou um teto reduzido não comprovam vantagem na configuração do campeonato.
 
 Para assistir aos confrontos automáticos, abra `assistir.bat`. O tabuleiro acompanha as duas partidas e mostra a cor da gestão própria, o lance e os tempos (atualizados ao fim de cada lance). Fechar o visualizador não interrompe os motores; os PGNs são preservados ao finalizar o confronto.
 

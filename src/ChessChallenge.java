@@ -128,6 +128,8 @@ public final class ChessChallenge extends JFrame {
             new SwingWorker<String,Void>() {
                 protected String doInBackground() throws Exception {
                     try {
+                        var mate=TacticalSearch.mateInOne(board);
+                        if(mate.isPresent()) return mate.get().toString().toLowerCase(Locale.ROOT);
                         if(engine==null) engine=new Stockfish(Stockfish.locate());
                         String result=engine.play(position,Math.min(searchMillis,budget.millis()));
                         return result;

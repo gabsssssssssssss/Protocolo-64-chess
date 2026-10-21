@@ -2,6 +2,8 @@
 
 ## O que foi implementado
 
+Além da gestão descrita abaixo, o projeto implementa `TacticalSearch.mateInOne`: enumera os lances legais, simula cada um em uma cópia do tabuleiro e testa se o adversário ficou em xeque-mate. Se encontrar, devolve esse lance sem consultar o Stockfish. Se não encontrar, delega a busca ao motor com o orçamento próprio. A seleção utiliza as regras da chesslib, não uma avaliação ou resposta da API do Stockfish. É executada no terminal e na interface. É uma busca exata limitada a um lance; não resolve combinações mais longas nem demonstra superioridade sobre o Stockfish.
+
 O projeto utiliza o Stockfish 19 para busca e avaliação, a chesslib para regras e uma política Java específica do projeto para decidir a duração da busca em cada posição. A implementação está em `TimeManager.allocateForPosition(Board)`. Essa função é chamada efetivamente por `TerminalGame` e `ChessChallenge` antes de cada cálculo, e seu resultado determina o parâmetro `go movetime` enviado ao Stockfish. Não há relógio acumulado nem encerramento da partida por tempo dentro desses modos.
 
 O FAQ fornecido pela equipe inclui gestão de tempo entre os componentes decisórios admitidos. Esta proposta gerencia o tempo de cálculo por lance externamente ao núcleo C++. A aceitação desse formato deve ser confirmada com a organização; este documento não certifica conformidade integral com o regulamento.
@@ -47,9 +49,11 @@ O comparador `comparar.ps1` ainda usa a política antiga com relógio acumulado.
 
 ## Respostas para a arguição
 
+O novo `testar-forca.ps1` compara a seleção de mate imediato e a política por posição com busca fixa, com várias aberturas e cores invertidas. O teto é escalável e o tempo real é registrado por lance. O orçamento adaptativo pode usar menos CPU que o fixo; essa comparação não controla igualdade de tempo total de cálculo. Consulte o README para condições e limites. Execute `TacticalVerification` para demonstrar seleção própria de mate, promoção e rejeição de afogamento.
+
 **O que é de terceiros?** A busca e a avaliação são do Stockfish 19; as regras e a geração de lances são da chesslib. As versões, origem e licenças estão em `ORIGENS.md`.
 
-**Qual componente foi implementado no projeto?** A decisão de quanto tempo calcular em cada posição, expressa em Java e utilizada nos dois modos de partida interativos. A interface, o salvamento e a importação PGN também pertencem à aplicação, mas não são apresentados como modificação decisória do motor.
+**Qual componente foi implementado no projeto?** A busca e seleção de mate imediato, mais a decisão de quanto tempo calcular nas demais posições, expressas em Java e utilizadas nos dois modos de partida interativos. A interface, o salvamento e a importação PGN também pertencem à aplicação, mas não são apresentados como modificação decisória do motor.
 
 **Como funciona sem relógio?** A partida não tem um saldo de minutos. Cada posição recebe um orçamento independente, que termina a busca e permite ao motor devolver a jogada. Isso não remove o relógio físico nem as regras de tempo do evento.
 

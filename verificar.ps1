@@ -9,6 +9,10 @@ java -cp 'build;vendor/*' SessionVerification
 if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação do salvamento.' }
 java -cp 'build;vendor/*' TimeManagerVerification
 if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação da gestão própria.' }
+java -cp 'build;vendor/*' TacticalVerification
+if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação da seleção tática.' }
+java -cp 'build;vendor/*' PositionMatchVerification
+if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação do comparador por posição.' }
 java -cp 'build;vendor/*' ChessChallenge --ui-test
 if ($LASTEXITCODE -ne 0) { throw 'Falha de verificação da interface.' }
 java -cp 'build;vendor/*' PgnVerification

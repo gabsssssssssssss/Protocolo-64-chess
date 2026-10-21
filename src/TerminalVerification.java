@@ -32,6 +32,16 @@ public final class TerminalVerification {
             new SessionStore(folder.resolve("sessao-terminal.properties")).save(Side.WHITE,"00:00",java.util.List.of());
             new TerminalGame(new BufferedReader(new StringReader("restaurar\nfeito\nsair\n")),new PrintWriter(resumed,true),folder,200).run();
             check(resumed.toString().contains("MOVA") && !resumed.toString().contains("esgotado"),"Sessão antiga zerada deve permitir jogar sem relógio");
+            Board beforeMate=new Board();
+            var mateHistory=new java.util.ArrayList<com.github.bhlangonijr.chesslib.move.Move>();
+            for(String uci:new String[]{"f2f3","e7e5","g2g4"}) {
+                var move=TerminalGame.parseMove(beforeMate,uci); mateHistory.add(move); beforeMate.doMove(move,true);
+            }
+            new SessionStore(folder.resolve("sessao-terminal.properties")).save(Side.BLACK,"sem-limite",mateHistory);
+            StringWriter finish=new StringWriter();
+            new TerminalGame(new BufferedReader(new StringReader("restaurar\nfeito\n")),new PrintWriter(finish,true),folder,1).run();
+            check(finish.toString().contains("Fim: 0-1"),"Busca própria deve concluir o mate no fluxo do terminal");
+            check(new SessionStore(folder.resolve("sessao-terminal.properties")).load().moves().size()==4,"Mate confirmado deve ficar salvo");
             try(var files=Files.list(folder)) { check(files.anyMatch(p -> p.toString().endsWith(".pgn")),"Exportação PGN"); }
             System.out.println("OK: comandos físicos, roque, en passant, promoção, lance ilegal, motor real, confirmação, PGN e restauração no terminal.");
             System.out.println(transcript.lines().filter(line -> line.contains("MOVA")).findFirst().orElseThrow());

@@ -9,6 +9,7 @@
 - SHA-256 do ZIP: `3C8BF1F9EA66A09350A40DF4F632288285AC206D99F33AB5842C408FC30B48A7`
 - Licença: GPLv3, texto em `LICENSE` e no pacote original.
 - Nenhuma alteração no código C++. A contribuição decisória proposta está no orçamento de cálculo por posição em `TimeManager.allocateForPosition`, chamado pelo terminal e pela interface. A implementação foi elaborada com assistência do Codex e exige revisão e domínio técnico pela equipe; ver `DEFESA-TECNICA.md`. A aceitação da gestão externa e das condições de autoria deve ser confirmada com a organização.
+- `TacticalSearch.mateInOne` implementa uma seleção externa exata de mate em um lance, usando regras da chesslib. Foi elaborada com assistência do Codex e não corresponde a uma modificação da busca interna do Stockfish.
 
 ## chesslib
 
