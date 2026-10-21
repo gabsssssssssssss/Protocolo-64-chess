@@ -23,10 +23,22 @@ public final class Stockfish implements AutoCloseable {
         reader.start();
         try {
             send("uci"); waitFor("uciok", 15000);
-            send("setoption name Threads value " + Math.min(4, Math.max(1, Runtime.getRuntime().availableProcessors()/2)));
-            send("setoption name Hash value 256");
+            send("setoption name Threads value " + setting("chess.threads",Math.min(4, Math.max(1, Runtime.getRuntime().availableProcessors()/2)),1,Math.max(1,Runtime.getRuntime().availableProcessors())));
+            send("setoption name Hash value " + setting("chess.hashMb",512,16,2048));
+            send("setoption name UCI_LimitStrength value false");
+            send("setoption name Skill Level value 20");
+            send("setoption name MultiPV value 1");
             send("isready"); waitFor("readyok", 15000);
         } catch (Exception e) { close(); throw e; }
+    }
+    static int setting(String name,int fallback,int minimum,int maximum) {
+        String value=System.getProperty(name);
+        if(value==null) return fallback;
+        try {
+            int parsed=Integer.parseInt(value);
+            if(parsed>=minimum && parsed<=maximum) return parsed;
+        } catch(NumberFormatException ignored) {}
+        throw new IllegalArgumentException(name+" deve estar entre "+minimum+" e "+maximum+".");
     }
     private void send(String line) throws IOException { input.write(line); input.newLine(); input.flush(); }
     private String waitFor(String prefix, long timeout) throws Exception {

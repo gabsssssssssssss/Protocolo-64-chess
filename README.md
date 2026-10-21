@@ -2,6 +2,14 @@
 
 Primeira versão local de treinamento. Requer Windows x64 e JDK 21 ou superior; desenvolvido no JDK 26. Interface Swing, regras pela chesslib e motor Stockfish em processo separado, via UCI.
 
+## Configuração de força e diagnóstico
+
+O motor usa 512 MB de Hash (antes 256 MB) e até 4 threads, conforme a quantidade de processadores lógicos. Skill Level 20, UCI_LimitStrength=false e MultiPV=1 são definidos explicitamente; esses três valores já eram os padrões do Stockfish fornecido, portanto não representam aumento de força por si mesmos. A memória de busca é mantida entre lances da mesma sessão. O aumento de Hash oferece mais espaço à tabela de busca, mas não comprova ganho de força e não aumenta o limite de 30 segundos por lance.
+
+Para experimentar recursos diferentes, a execução Java aceita `-Dchess.threads=N` (1 até o número de processadores lógicos) e `-Dchess.hashMb=N` (16 a 2048 MB), antes de `-cp`. Mais threads não garantem melhor desempenho, especialmente executando dois motores simultaneamente. Compare configurações com o mesmo controle de tempo antes do campeonato.
+
+Execute `powershell -ExecutionPolicy Bypass -File diagnosticar.ps1` para verificar quatro posições simples de mate e captura de dama, com busca de até 2 segundos por posição. O relatório CSV fica em `partidas/diagnostico-tatico-*.csv`. Esse diagnóstico verifica falhas básicas; não mede Elo, precisão geral ou superioridade sobre a versão anterior. Para comparar a gestão de tempo em partidas, use `comparar.ps1`, descrito adiante.
+
 ## Executar
 
 ### Campeonato com tabuleiro físico: terminal do VS Code
