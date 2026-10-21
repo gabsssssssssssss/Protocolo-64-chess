@@ -97,4 +97,10 @@ chesslib 1.3.7 e Apache Commons Lang 3.18.0: Apache-2.0. Seus avisos e licenças
 
 ## Entrega
 
+### Registrar alterações no GitHub
+
+Após configurar o repositório remoto, salve os arquivos no VS Code, revise suas alterações no painel Controle do Código-Fonte e execute `powershell -ExecutionPolicy Bypass -File sincronizar.ps1 -Mensagem "Descreva a melhoria realizada"`. O comando prepara todas as alterações não ignoradas, cria um commit e envia a branch atual ao GitHub. Se já houver commits locais sem alterações novas, ele tenta enviá-los novamente. Salvar um arquivo no editor não cria um commit automaticamente.
+
+Cada melhoria concluída deve receber uma descrição clara. Não coloque senhas ou tokens no código; arquivos `.env`, chaves privadas, dependências, compilações e partidas estão ignorados. Os commits anteriores do projeto são preservados no envio. O script não executa os testes: use `verificar.ps1` quando a alteração exigir validação.
+
 O código-fonte está versionado; dependências, binários e partidas ficam fora do Git. A entrega deve incluir as versões e licenças, instruções reproduzíveis, o componente próprio e sua explicação. Data indicada no regulamento: 04/11/2026. Confirme com a organização o formato de envio e os pontos contraditórios do regulamento antes da entrega.

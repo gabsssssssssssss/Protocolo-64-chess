@@ -5,3 +5,7 @@ partidas/
 tmp/
 build/
 *.class
+.env
+.env.*
+*.pem
+*.key
