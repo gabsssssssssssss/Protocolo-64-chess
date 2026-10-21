@@ -20,7 +20,7 @@ No VS Code, pressione **Ctrl+Shift+B** para compilar e iniciar o jogo no termina
 
 1. Escolha `brancas` ou `pretas` (ou `restaurar` para recuperar a sessão do terminal).
 2. Na vez do adversário, registre a origem/destino: `e7e5`, `e7 e5` ou SAN como `Nf3`, `O-O`. Para promoção por coordenadas, use `e7e8q` (q=dama, r=torre, b=bispo, n=cavalo).
-3. Na nossa vez, o motor calcula automaticamente por até 30 segundos. Não existe relógio acumulado nem derrota por tempo dentro do aplicativo.
+3. Na nossa vez, a gestão própria decide a duração do cálculo conforme a posição, até 30 segundos. Não existe relógio acumulado nem derrota por tempo dentro do aplicativo.
 4. Leia a instrução **MOVA O PEÃO DE E2 PARA E4**. Captura, roque, en passant e promoção têm instruções adicionais.
 5. Execute no tabuleiro físico e digite `feito`. Só então o programa registra nosso lance. `cancelar` volta para recalcular; `sair` encerra sem confirmar a recomendação.
 
@@ -34,7 +34,7 @@ O tabuleiro usa tema escuro, moldura com detalhe dourado, casas verde/marfim e p
 2. Abra `iniciar.bat`. Ele compila e abre a interface.
 3. Escolha nossa cor antes do primeiro lance. Com brancas, clique em **Calcular nosso lance**. Com pretas, registre primeiro o lance adversário.
 4. Registre o adversário clicando na origem e no destino, ou digitando coordenadas como `e2e4`. Roque curto branco: `e1g1`; promoção: `e7e8q`.
-5. Clique em **Calcular nosso lance**. A busca usa até 30 segundos por lance; a partida não tem relógio interno nem campo de tempo restante.
+5. Clique em **Calcular nosso lance**. A gestão própria distribui até 30 segundos por posição; a partida não tem relógio interno nem campo de tempo restante.
 6. Mova a peça indicada no tabuleiro físico. A posição da tela já inclui o lance calculado.
 7. Salve o PGN para revisar a partida; os arquivos ficam em `partidas/`.
 
@@ -70,10 +70,10 @@ O salvamento usa caminhos absolutos e tenta substituição atômica, com alterna
 
 - `ChessChallenge.java`: interface, histórico, entrada de lances legais e exportação PGN.
 - `Stockfish.java`: transporte UCI, histórico completo enviado ao motor, limites de espera e encerramento de processo.
-- `TimeManager.java`: política própria experimental, mantida apenas no comparador de motores. Não participa das partidas do terminal nem da interface, que usam busca fixa de até 30 segundos por lance.
+- `TimeManager.java`: a política `allocateForPosition` funciona no terminal e na interface e escolhe o orçamento por fase, capturas, xeque e promoção, com teto de 30 segundos e 100 ms quando só existe um lance legal. A política antiga `allocate(board,remaining)` permanece exclusiva do comparador.
 - `Verification.java`: verificações de regras especiais, perft e integração com motor real.
 
-A busca e a avaliação do Stockfish não foram alteradas. Com a retirada do relógio, a gestão própria deixou de atuar nas partidas interativas; portanto esta configuração ainda precisa de um componente decisório próprio funcional para satisfazer a exigência de modificação significativa do FAQ. O comparador mantém a política experimental e os relógios exclusivamente para testes controlados. Não declarar o Stockfish nem a biblioteca como criação da equipe.
+A busca e a avaliação do Stockfish não foram alteradas. A contribuição decisória proposta é a gestão externa do tempo de cálculo por posição, funcional nas partidas interativas, sem relógio acumulado. Consulte `DEFESA-TECNICA.md` para a fórmula, justificativas, limites, demonstração e respostas para a arguição. É necessário confirmar com a organização a aceitação dessa abordagem e tratar com transparência a assistência de IA; não declarar conformidade integral nem autoria da equipe sobre o Stockfish e a chesslib.
 
 Código inicial elaborado com assistência do Codex. Mantenham um registro transparente das contribuições e sigam eventuais orientações da faculdade sobre ferramentas de IA.
 
@@ -86,6 +86,8 @@ Execute `powershell -ExecutionPolicy Bypass -File verificar.ps1`.
 No VS Code, o projeto reconhece `src/` e os JARs de `vendor/`. Com a extensão recomendada **Extension Pack for Java**, abra Executar e Depurar e selecione **Abrir Chess Challenge**. Os scripts continuam funcionando sem extensões.
 
 Para comparar a política própria com a gestão original, execute `powershell -ExecutionPolicy Bypass -File comparar.ps1 -Segundos 30`. São duas partidas com cores invertidas e mesma abertura, usando processos separados, mesmo número de threads e mesma memória. PGNs e tempos por lance ficam em `partidas/comparacao-.../`. O orçamento original usa `go wtime/btime`; o próprio usa `go movetime`. Inicialização dos processos fica fora do relógio; duração da comunicação e busca entra no relógio. Há limite de segurança de 400 meios-lances, que produz partida inacabada (`*`). O teste rápido verifica integração; para avaliar força são necessárias muitas partidas e aberturas diferentes. A comparação automática não inclui tempo de movimentação de peças físicas.
+
+Esse comparador usa a política antiga com saldo de tempo, não a nova política por posição das partidas interativas. Não usar seus resultados como evidência de força da política nova.
 
 Antes do campeonato ainda são necessários: validação visual no computador da equipe, simulações de partidas físicas completas, teste sem internet, teste de aquecimento, comparação da gestão própria contra a original com mesmo hardware e controle de tempo, e preparação da arguição. Não há evidência de ganho de força desta política inicial.
 

@@ -120,6 +120,7 @@ public final class ChessChallenge extends JFrame {
         if(busy || over()) return;
         if(board.getSideToMove()!=ours()) { status.setText("Registre primeiro o lance adversário."); return; }
         try {
+            var budget=TimeManager.allocateForPosition(board);
             checkpoint();
             String position=String.join(" ",moves.stream().map(m -> m.toString().toLowerCase(Locale.ROOT)).toList());
             busy=true; selected=null; draw();
@@ -128,7 +129,7 @@ public final class ChessChallenge extends JFrame {
                 protected String doInBackground() throws Exception {
                     try {
                         if(engine==null) engine=new Stockfish(Stockfish.locate());
-                        String result=engine.play(position,searchMillis);
+                        String result=engine.play(position,Math.min(searchMillis,budget.millis()));
                         return result;
                     } catch(Exception e) { if(engine!=null) engine.close(); engine=null; throw e; }
                 }

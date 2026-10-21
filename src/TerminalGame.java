@@ -46,10 +46,11 @@ public final class TerminalGame {
                     catch(Exception e) { output.println("Lance inválido. Digite origem e destino, como e7e5."); }
                 } else {
                     checkpoint();
+                    var budget=TimeManager.allocateForPosition(board);
                     String reply;
                     try {
                         if(engine==null) engine=new Stockfish(Stockfish.locate());
-                        reply=engine.play(String.join(" ",moves.stream().map(m -> m.toString().toLowerCase(Locale.ROOT)).toList()),searchMillis);
+                        reply=engine.play(String.join(" ",moves.stream().map(m -> m.toString().toLowerCase(Locale.ROOT)).toList()),Math.min(searchMillis,budget.millis()));
                     } catch(Exception e) {
                         if(engine!=null) engine.close(); engine=null;
                         output.println("Falha no motor: "+e.getMessage());
