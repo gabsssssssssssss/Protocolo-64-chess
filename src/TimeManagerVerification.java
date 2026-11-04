@@ -40,6 +40,20 @@ public final class TimeManagerVerification {
         rejected=false;
         try { TimeManager.allocateForPosition(draw); } catch(IllegalArgumentException expected) { rejected=true; }
         check(rejected,"Material insuficiente não deve receber orçamento");
+        long[][] clockCases={{900_000,5_000},{180_001,5_000},{180_000,3_000},{60_000,3_000},
+            {59_999,2_000},{20_000,2_000},{19_999,1_000},{3_500,500},{3_000,1}};
+        for(long[] clockCase:clockCases) {
+            long actual=TimeManager.tournamentBudget(opening,clockCase[0],10_000,30_000);
+            check(actual==clockCase[1],"Orçamento do terminal com saldo de "+clockCase[0]+" ms");
+        }
+        Board majorCapture=board("4k3/8/8/3r4/2P5/8/8/4K3 w - - 0 30");
+        for(Board tactical:List.of(checked,promotion,majorCapture)) {
+            check(TimeManager.tournamentBudget(tactical,900_000,10_000,30_000)==8_000,"Teto tático");
+            check(TimeManager.tournamentBudget(tactical,19_999,10_000,30_000)==1_000,"Teto de emergência prevalece");
+        }
+        check(TimeManager.tournamentBudget(forced,900_000,10_000,30_000)==100,"Lance forçado no terminal");
+        check(TimeManager.tournamentBudget(opening,60_000,0,30_000)==1_900,"Conserva saldo sem incremento");
+        check(TimeManager.tournamentBudget(opening,900_000,10_000,200)==200,"Respeita teto adicional de teste");
         StringBuilder report=new StringBuilder("caso,orcamento_ms,motivo\n");
         var cases=new LinkedHashMap<String,Board>();
         cases.put("abertura",opening); cases.put("meio_jogo",middle); cases.put("final",end);

@@ -9,7 +9,23 @@ public final class TimeManager {
         if(remaining<=PHYSICAL_RESERVE_MILLIS) return 1;
         long spendable=remaining-PHYSICAL_RESERVE_MILLIS;
         long sustainable=Math.max(1,increment+spendable/30);
-        return Math.min(Math.min(cap,allocateForPosition(board).millis()),Math.min(spendable,sustainable));
+        var moves=board.legalMoves();
+        if(moves.isEmpty() || board.isDraw()) throw new IllegalArgumentException("A partida já terminou.");
+
+        long positionCap;
+        if(moves.size()==1) positionCap=100;
+        else if(remaining<20_000) positionCap=1_000;
+        else if(remaining<60_000) positionCap=2_000;
+        else if(remaining<=180_000) positionCap=3_000;
+        else {
+            boolean tactical=board.isKingAttacked() || moves.stream().anyMatch(move ->
+                move.getPromotion()!=Piece.NONE || switch(board.getPiece(move.getTo())) {
+                    case WHITE_QUEEN, BLACK_QUEEN, WHITE_ROOK, BLACK_ROOK -> true;
+                    default -> false;
+                });
+            positionCap=tactical ? 8_000 : 5_000;
+        }
+        return Math.min(Math.min(cap,positionCap),Math.min(spendable,sustainable));
     }
     /** Política própria por posição, sem relógio acumulado de partida. */
     public static Budget allocateForPosition(Board board) {

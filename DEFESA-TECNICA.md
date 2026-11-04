@@ -4,9 +4,11 @@
 
 Além da gestão descrita abaixo, o projeto implementa `TacticalSearch.mateInOne`: enumera os lances legais, simula cada um em uma cópia do tabuleiro e testa se o adversário ficou em xeque-mate. Se encontrar, devolve esse lance sem consultar o Stockfish. Se não encontrar, delega a busca ao motor com o orçamento próprio. A seleção utiliza as regras da chesslib, não uma avaliação ou resposta da API do Stockfish. É executada no terminal e na interface. É uma busca exata limitada a um lance; não resolve combinações mais longas nem demonstra superioridade sobre o Stockfish.
 
-O projeto utiliza o Stockfish 19 para busca e avaliação, a chesslib para regras e a política Java de `TimeManager.allocateForPosition(Board)` para estimar quanto vale gastar em cada posição. No terminal, `tournamentBudget` combina essa estimativa com o saldo da partida. O resultado determina o `go movetime` enviado ao Stockfish. A interface gráfica de treino usa o orçamento por posição.
+O projeto utiliza o Stockfish 19 para busca e avaliação e a chesslib para regras. No terminal, a política Java `TimeManager.tournamentBudget` calcula o `go movetime` enviado ao Stockfish. A interface gráfica de treino usa `allocateForPosition`, descrita na próxima seção.
 
-No terminal, o saldo estimado parte de 900.000 ms, desconta o tempo decorrido no nosso turno e soma 10.000 ms após a confirmação do lance. Para a busca, toma-se o menor valor entre orçamento posicional, teto, saldo menos 3.000 ms e incremento mais um trigésimo do saldo acima dessa reserva. Abaixo da reserva, o pedido ao Stockfish é de 1 ms. O relógio físico prevalece e permite sincronização manual. O ajuste de relógio e o log foram implementados com assistência do Codex.
+No terminal, o saldo regular parte de 900.000 ms, desconta o tempo do nosso turno e soma 10.000 ms após a confirmação do lance. Acima de 3 minutos, a busca recebe até 5 segundos, ou 8 se o rei estiver em xeque, houver promoção legal ou for possível capturar uma torre ou dama. De 1 a 3 minutos o teto é de 3 segundos. Abaixo de 1 minuto é de 2 segundos e abaixo de 20 segundos é de 1 segundo. Um único lance legal recebe até 100 ms.
+
+Aplica-se ainda o menor limite entre o saldo menos a reserva física de 3.000 ms e o incremento mais um trigésimo desse saldo acima da reserva. Com saldo igual ou inferior à reserva, o pedido é de 1 ms. O relógio físico permite sincronização manual. O ajuste de relógio e o log foram implementados com assistência do Codex.
 
 O FAQ fornecido pela equipe inclui gestão de tempo entre os componentes decisórios admitidos. Esta proposta gerencia o tempo de cálculo por lance externamente ao núcleo C++. A aceitação desse formato deve ser confirmada com a organização; este documento não certifica conformidade integral com o regulamento.
 
@@ -29,7 +31,7 @@ Ao tempo base são adicionados:
 - 6.000 ms se existir alguma promoção legal; subpromoções não multiplicam esse bônus.
 - 500 ms por lance legal que dá xeque, até 2.000 ms. Os lances são simulados numa cópia do tabuleiro. A regra foi implementada com assistência do Codex e seu impacto sobre a força ainda não foi medido.
 
-O resultado é limitado a 30.000 ms. O limite não inclui inicialização e comunicação com o processo. Os testes de integração podem usar um teto menor para não aguardar esses intervalos; o uso normal mantém o teto de 30 segundos.
+Na política por posição, o resultado é limitado a 30.000 ms de busca. O tempo de inicialização e comunicação com o processo é medido separadamente do orçamento.
 
 Exemplo: uma posição de meio-jogo com 30 lances legais, dos quais 6 são capturas e 2 dão xeque, sem rei em xeque nem promoção, recebe `16000 + 8000*6/30 + 500*2 = 18600 ms`.
 

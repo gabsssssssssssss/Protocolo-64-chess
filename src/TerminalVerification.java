@@ -56,10 +56,6 @@ public final class TerminalVerification {
             var mateRow=mateSession.logRows().getLast().split("\t");
             check(mateRow[2].equals("d8h4") && mateRow[3].equals("1") && Integer.parseInt(mateRow[4])>0
                 && mateRow[5].equals("mate 1") && mateRow[9].equals("mate_java"),"Métricas da busca Java");
-            Board opening=new Board();
-            check(TimeManager.tournamentBudget(opening,4_000,10_000,30_000)==1_000
-                && TimeManager.tournamentBudget(opening,2_000,10_000,30_000)==1
-                && TimeManager.tournamentBudget(opening,900_000,10_000,30_000)>1_000,"Limites do orçamento com relógio");
             new TerminalGame(new BufferedReader(new StringReader("armageddon pretas 0\nsair\n")),new PrintWriter(new StringWriter(),true),folder).run();
             var armageddon=new SessionStore(folder.resolve("sessao-terminal.properties")).load();
             check(armageddon.clock().equals("04:00") && armageddon.increment()==0,"Armageddon preto com incremento informado");

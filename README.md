@@ -6,7 +6,7 @@ Primeira versão local de treinamento. Requer Windows x64 e JDK 21 ou superior; 
 
 Antes de consultar o Stockfish, o terminal e a interface executam `TacticalSearch.mateInOne`: uma busca própria de um lance que simula os movimentos legais e seleciona um xeque-mate confirmado, se existir. Não confunde afogamento com mate e considera promoções. Na ausência de mate imediato, a decisão segue com Stockfish e a gestão própria de cálculo. Isso permite concluir mates imediatos sem inicializar nem aguardar o processo externo; não comprova aumento de Elo, pois o Stockfish também encontra esses mates.
 
-O motor usa 512 MB de Hash (antes 256 MB) e até 4 threads, conforme a quantidade de processadores lógicos. Skill Level 20, UCI_LimitStrength=false e MultiPV=1 são definidos explicitamente; esses três valores já eram os padrões do Stockfish fornecido, portanto não representam aumento de força por si mesmos. A memória de busca é mantida entre lances da mesma sessão. O aumento de Hash oferece mais espaço à tabela de busca, mas não comprova ganho de força e não aumenta o limite de 30 segundos por lance.
+O motor usa 512 MB de Hash e até 4 threads, conforme a quantidade de processadores lógicos. Skill Level 20, UCI_LimitStrength=false e MultiPV=1 são definidos explicitamente. Esses valores são os padrões do Stockfish fornecido. A memória de busca é mantida entre lances da mesma sessão.
 
 Para experimentar recursos diferentes, a execução Java aceita `-Dchess.threads=N` (1 até o número de processadores lógicos) e `-Dchess.hashMb=N` (16 a 2048 MB), antes de `-cp`. Mais threads não garantem melhor desempenho, especialmente executando dois motores simultaneamente. Compare configurações com o mesmo controle de tempo antes do campeonato.
 
@@ -22,7 +22,7 @@ No VS Code, pressione **Ctrl+Shift+B** para compilar e iniciar o jogo no termina
 
 1. Abra o programa antes de acionar o relógio para o Stockfish carregar. Escolha `brancas`, `pretas` ou `restaurar`. Nas partidas regulares, o saldo começa em 15 minutos e recebe 10 segundos a cada lance confirmado.
 2. Repita o UCI anunciado pelo adversário. Depois que ele mover a peça e acionar o relógio, digite o lance, como `e7e5` ou `e7e8q`. Use `e7e5 14:32` para sincronizar com o tempo restante **da sua cor** na entrada.
-3. Na nossa vez, o orçamento usa a posição, o saldo e o incremento, com teto de 30 segundos e margem de 3 segundos para operação física quando há tempo disponível.
+3. Na nossa vez, com mais de 3 minutos o motor recebe até 5 segundos, ou 8 em posições táticas. Com 1 a 3 minutos, o teto cai para 3 segundos. Abaixo de 1 minuto, cai para 2 segundos, e abaixo de 20 segundos, para 1 segundo. Um único lance legal recebe até 100 ms. O saldo, o incremento e a reserva física podem reduzir esses tetos.
 4. Anuncie o UCI mostrado e aguarde a confirmação do adversário. Faça a jogada física, acione o relógio e digite `feito`. Para sincronizar com o valor físico já acrescido do incremento, use `feito 14:42`. `cancelar` recalcula; `sair` encerra com os lances já confirmados.
 5. Entregue o arquivo `partidas/partida-<id>.log` mostrado na abertura. Cada linha corresponde a um lance confirmado. A avaliação usa a perspectiva do lado a jogar. `NA` indica métrica indisponível, por exemplo num lance informado pelo adversário ou importado de uma sessão antiga. O tempo do turno exibido no log é uma estimativa entre o registro do lance anterior e a confirmação do nosso lance. O tempo de cálculo vem do Stockfish ou da busca Java.
 
@@ -74,7 +74,7 @@ O salvamento usa caminhos absolutos e tenta substituição atômica, com alterna
 
 - `ChessChallenge.java`: interface, histórico, entrada de lances legais e exportação PGN.
 - `Stockfish.java`: transporte UCI, histórico completo enviado ao motor, limites de espera e encerramento de processo.
-- `TimeManager.java`: a política `allocateForPosition` funciona no terminal e na interface e escolhe o orçamento por fase, capturas, xeque e promoção, com teto de 30 segundos e 100 ms quando só existe um lance legal. A política antiga `allocate(board,remaining)` permanece exclusiva do comparador.
+- `TimeManager.java`: o terminal usa `tournamentBudget` para limitar a busca por saldo e situação tática. A interface gráfica e o comparador por posição usam `allocateForPosition`, com teto de 30 segundos. O comparador antigo usa `allocate(board,remaining)`.
 - `TacticalSearch.java`: seleção própria exata de mate em um lance, funcionando antes do Stockfish nos modos interativos e no comparador novo.
 - `Verification.java`: verificações de regras especiais, perft e integração com motor real.
 
