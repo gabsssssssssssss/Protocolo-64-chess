@@ -38,7 +38,7 @@ public final class PositionMatchRunner {
         if(ceiling<1 || ceiling>30000 || openingCount<1 || openingCount>OPENINGS.length || maxPlies<5 || maxPlies>400)
             throw new IllegalArgumentException("Use teto 1..30000 ms, 1..6 aberturas e limite 5..400 meios-lances.");
         Files.createDirectories(folder);
-        Files.writeString(folder.resolve("configuracao.txt"),"politica=mate-em-1+por-posicao-v1\nbaseline=tempo-fixo\nteto_ms="+ceiling
+        Files.writeString(folder.resolve("configuracao.txt"),"politica=mate-em-1+por-posicao-v2\nbaseline=tempo-fixo\nteto_ms="+ceiling
             +"\naberturas="+openingCount+"\nlimite_meios_lances="+maxPlies
             +"\nthreads="+Stockfish.setting("chess.threads",Math.min(4,Math.max(1,Runtime.getRuntime().availableProcessors()/2)),1,Math.max(1,Runtime.getRuntime().availableProcessors()))
             +"\nhash_mb="+Stockfish.setting("chess.hashMb",512,16,2048)

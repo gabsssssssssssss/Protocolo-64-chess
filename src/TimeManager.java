@@ -22,7 +22,9 @@ public final class TimeManager {
         int fullmove=Integer.parseInt(board.getFen().split(" ")[5]);
         boolean endgame=material<=20, opening=fullmove<=10 && material>=50;
         long base=endgame ? 18000 : (opening ? 12000 : 16000);
-        int captures=0, promotions=0;
+        int captures=0, promotions=0, attackingChecks=0;
+        Board simulation=new Board();
+        simulation.loadFromFen(board.getFen());
         for(Move move:moves) {
             Piece piece=board.getPiece(move.getFrom());
             boolean pawn=piece==Piece.WHITE_PAWN || piece==Piece.BLACK_PAWN;
@@ -30,15 +32,20 @@ public final class TimeManager {
                 && move.getFrom().toString().charAt(0)!=move.getTo().toString().charAt(0);
             if(board.getPiece(move.getTo())!=Piece.NONE || enPassant) captures++;
             if(move.getPromotion()!=Piece.NONE) promotions++;
+            if(!simulation.doMove(move,true)) throw new IllegalStateException("Falha ao simular lance legal.");
+            if(simulation.isKingAttacked()) attackingChecks++;
+            simulation.undoMove();
         }
         long activity=8000L*captures/moves.size();
         long check=board.isKingAttacked() ? 6000 : 0;
         long promotion=promotions>0 ? 6000 : 0;
-        long budget=Math.min(30000,base+activity+check+promotion);
+        long attack=Math.min(2000,500L*attackingChecks);
+        long budget=Math.min(30000,base+activity+check+promotion+attack);
         String phase=endgame ? "final" : (opening ? "abertura" : "meio-jogo");
-        return new Budget(budget,"Política por posição v1: "+phase+"; base="+base
+        return new Budget(budget,"Política por posição v2: "+phase+"; base="+base
             +"ms; capturas="+captures+"/"+moves.size()+" (+"+activity+"ms); xeque=+"+check
-            +"ms; promoção=+"+promotion+"ms; teto=30000ms");
+            +"ms; promoção=+"+promotion+"ms; xeques disponíveis="+attackingChecks
+            +" (+"+attack+"ms); teto=30000ms");
     }
 
     /** Política com relógio, usada somente no comparador experimental. */

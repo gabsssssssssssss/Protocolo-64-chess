@@ -14,6 +14,13 @@ public final class TimeManagerVerification {
         check(TimeManager.allocateForPosition(middle).millis()==16000,"Fase após abertura");
         Board end=board("7k/8/8/8/8/8/P7/K7 w - - 0 30");
         check(TimeManager.allocateForPosition(end).millis()==18000,"Final tranquilo");
+        Board attack=board("7k/8/8/8/8/8/1R6/K7 w - - 0 30");
+        String attackFen=attack.getFen();
+        var attackHistory=List.copyOf(attack.getHistory());
+        check(!attack.isKingAttacked() && TimeManager.allocateForPosition(attack).millis()==19000,
+            "Rb8+ e Rh2+ devem acrescentar 1 segundo");
+        check(attack.getFen().equals(attackFen) && attackHistory.equals(attack.getHistory()),
+            "Simular xeques não deve alterar o tabuleiro ou histórico");
         Board checked=board("r6k/8/8/8/8/8/8/K7 w - - 0 30");
         check(TimeManager.allocateForPosition(checked).millis()>TimeManager.allocateForPosition(end).millis(),"Xeque deve aumentar orçamento quando há alternativas");
         Board forced=board("7k/8/8/8/8/8/1r6/K7 w - - 0 30");
@@ -36,6 +43,7 @@ public final class TimeManagerVerification {
         StringBuilder report=new StringBuilder("caso,orcamento_ms,motivo\n");
         var cases=new LinkedHashMap<String,Board>();
         cases.put("abertura",opening); cases.put("meio_jogo",middle); cases.put("final",end);
+        cases.put("dois_xeques_disponiveis",attack);
         cases.put("xeque",checked); cases.put("resposta_forcada",forced); cases.put("en_passant",ep); cases.put("promocao",promotion); cases.put("teto_combinado",critical);
         for(var entry:cases.entrySet()) {
             var budget=TimeManager.allocateForPosition(entry.getValue());

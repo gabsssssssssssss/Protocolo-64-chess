@@ -8,7 +8,7 @@ O projeto utiliza o Stockfish 19 para busca e avaliação, a chesslib para regra
 
 O FAQ fornecido pela equipe inclui gestão de tempo entre os componentes decisórios admitidos. Esta proposta gerencia o tempo de cálculo por lance externamente ao núcleo C++. A aceitação desse formato deve ser confirmada com a organização; este documento não certifica conformidade integral com o regulamento.
 
-## Regras da política v1
+## Regras da política v2
 
 Primeiro são considerados apenas lances legais. Se a partida já terminou, não há cálculo. Quando só existe um lance legal, são usados 100 ms: prolongar a busca não muda a única escolha disponível.
 
@@ -25,10 +25,11 @@ Ao tempo base são adicionados:
 - `8000 * capturasLegais / totalDeLancesLegais` ms, com divisão inteira; en passant é contado como captura.
 - 6.000 ms se o lado a jogar estiver em xeque.
 - 6.000 ms se existir alguma promoção legal; subpromoções não multiplicam esse bônus.
+- 500 ms por lance legal que dá xeque, até 2.000 ms. Os lances são simulados numa cópia do tabuleiro. A regra foi implementada com assistência do Codex e seu impacto sobre a força ainda não foi medido.
 
 O resultado é limitado a 30.000 ms. O limite não inclui inicialização e comunicação com o processo. Os testes de integração podem usar um teto menor para não aguardar esses intervalos; o uso normal mantém o teto de 30 segundos.
 
-Exemplo: uma posição de meio-jogo com 30 lances legais, dos quais 6 são capturas, sem xeque nem promoção, recebe `16000 + 8000*6/30 = 17600 ms`.
+Exemplo: uma posição de meio-jogo com 30 lances legais, dos quais 6 são capturas e 2 dão xeque, sem rei em xeque nem promoção, recebe `16000 + 8000*6/30 + 500*2 = 18600 ms`.
 
 ## Por que essas regras
 
