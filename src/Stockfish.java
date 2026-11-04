@@ -6,7 +6,7 @@ import java.util.*;
 
 /** Comunicação UCI local. A fila permite detectar timeout e encerramento do processo. */
 public final class Stockfish implements AutoCloseable {
-    public record Analysis(String bestMove,Integer centipawns,Integer mate,int depth,List<String> line) {}
+    public record Analysis(String bestMove,Integer centipawns,Integer mate,int depth,List<String> line,Long nodes,Long timeMillis) {}
     private final Process process;
     private final BufferedWriter input;
     private final BlockingQueue<String> output = new LinkedBlockingQueue<>();
@@ -67,10 +67,16 @@ public final class Stockfish implements AutoCloseable {
     /** Mantém o histórico do PGN, inclusive para detectar repetições. Score: lado a jogar. */
     public Analysis analyse(String initialFen,String moves,long millis) throws Exception {
         if(millis<1 || millis>30000 || initialFen.contains("\n") || moves.contains("\n")) throw new IllegalArgumentException("Parâmetros de análise inválidos.");
-        send("position fen " + initialFen + (moves.isBlank() ? "" : " moves " + moves));
+        return search("fen " + initialFen,moves,millis,5000);
+    }
+    public Analysis playLogged(String moves,long millis) throws Exception {
+        return search("startpos",moves,millis,500);
+    }
+    private Analysis search(String position,String moves,long millis,long grace) throws Exception {
+        send("position " + position + (moves.isBlank() ? "" : " moves " + moves));
         send("go movetime " + millis);
-        long deadline=System.nanoTime()+TimeUnit.MILLISECONDS.toNanos(millis+5000);
-        Analysis latest=new Analysis("",null,null,0,List.of());
+        long deadline=System.nanoTime()+TimeUnit.MILLISECONDS.toNanos(millis+grace);
+        Analysis latest=new Analysis("",null,null,0,List.of(),null,null);
         while(true) {
             long left=deadline-System.nanoTime();
             String message=left>0 ? output.poll(left,TimeUnit.NANOSECONDS) : null;
@@ -80,24 +86,27 @@ public final class Stockfish implements AutoCloseable {
                 Analysis parsed=parseInfo(message);
                 if(parsed!=null) latest=parsed;
             }
-            if(message.startsWith("bestmove ")) return new Analysis(message.split(" ")[1],latest.centipawns(),latest.mate(),latest.depth(),latest.line());
+            if(message.startsWith("bestmove ")) return new Analysis(message.split(" ")[1],latest.centipawns(),latest.mate(),latest.depth(),latest.line(),latest.nodes(),latest.timeMillis());
         }
     }
     static Analysis parseInfo(String message) {
         if(!message.startsWith("info ") || message.contains(" lowerbound") || message.contains(" upperbound")) return null;
         String[] words=message.trim().split("\\s+"); Integer cp=null,mate=null; int depth=0;
+        Long nodes=null,time=null;
         List<String> line=List.of();
         try {
             for(int i=1;i<words.length;i++) {
                 if(words[i].equals("multipv") && i+1<words.length && !words[i+1].equals("1")) return null;
                 if(words[i].equals("depth") && i+1<words.length) depth=Integer.parseInt(words[++i]);
+                else if(words[i].equals("nodes") && i+1<words.length) nodes=Long.parseLong(words[++i]);
+                else if(words[i].equals("time") && i+1<words.length) time=Long.parseLong(words[++i]);
                 else if(words[i].equals("score") && i+2<words.length) {
                     String type=words[++i]; int value=Integer.parseInt(words[++i]);
                     if(type.equals("cp")) cp=value; else if(type.equals("mate")) mate=value;
                 } else if(words[i].equals("pv")) { line=List.of(Arrays.copyOfRange(words,i+1,words.length)); break; }
             }
         } catch(NumberFormatException e) { return null; }
-        return cp==null && mate==null ? null : new Analysis("",cp,mate,depth,line);
+        return cp==null && mate==null ? null : new Analysis("",cp,mate,depth,line,nodes,time);
     }
     public static Path locate() throws IOException {
         try (var paths = Files.walk(Path.of("vendor/engine"))) {

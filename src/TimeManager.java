@@ -3,7 +3,14 @@ import com.github.bhlangonijr.chesslib.move.Move;
 
 /** Política experimental própria; precisa de comparação com o motor original. */
 public final class TimeManager {
+    static final long INITIAL_MILLIS=900_000, INCREMENT_MILLIS=10_000, PHYSICAL_RESERVE_MILLIS=3_000;
     public record Budget(long millis, String reason) {}
+    static long tournamentBudget(Board board,long remaining,long increment,long cap) {
+        if(remaining<=PHYSICAL_RESERVE_MILLIS) return 1;
+        long spendable=remaining-PHYSICAL_RESERVE_MILLIS;
+        long sustainable=Math.max(1,increment+spendable/30);
+        return Math.min(Math.min(cap,allocateForPosition(board).millis()),Math.min(spendable,sustainable));
+    }
     /** Política própria por posição, sem relógio acumulado de partida. */
     public static Budget allocateForPosition(Board board) {
         var moves=board.legalMoves();

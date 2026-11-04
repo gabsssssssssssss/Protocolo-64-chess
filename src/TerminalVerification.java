@@ -23,15 +23,25 @@ public final class TerminalVerification {
             check(transcript.contains("Lance inválido") && transcript.contains("MOVA"),"Fluxo terminal com motor real");
             var saved=new SessionStore(folder.resolve("sessao-terminal.properties")).load();
             check(saved.moves().size()==2 && saved.color()==Side.BLACK,"Sessão deve conter adversário e nosso lance");
-            check(saved.clock().equals("sem-limite") && !transcript.contains("esgotado"),"Partida sem relógio");
+            check(TerminalGame.readClock(saved.clock())>=900_000,"Incremento registrado");
+            Path log=folder.resolve("partida-"+saved.matchId()+".log");
+            var logLines=Files.readAllLines(log);
+            check(logLines.size()==3 && logLines.get(1).startsWith("1\tbrancas\te2e4\tNA\tNA"),"Lance adversário no log");
+            var metrics=logLines.get(2).split("\t");
+            check(metrics[1].equals("pretas") && Integer.parseInt(metrics[3])>0 && Long.parseLong(metrics[4])>0
+                && !metrics[5].equals("NA") && metrics[6].startsWith(metrics[2]) && Long.parseLong(metrics[7])>=0,
+                "Métricas reais do Stockfish");
+            new TerminalGame(new BufferedReader(new StringReader("restaurar\n14:30\nsair\n")),new PrintWriter(new StringWriter(),true),folder).run();
+            check(Files.readAllLines(log).equals(logLines),"Restauração conserva o mesmo log");
             new SessionStore(folder.resolve("sessao-terminal.properties")).save(saved.color(),"00:00",saved.moves());
             StringWriter restore=new StringWriter();
-            new TerminalGame(new BufferedReader(new StringReader("restaurar\nsair\n")),new PrintWriter(restore,true),folder).run();
+            new TerminalGame(new BufferedReader(new StringReader("restaurar\n14:30\nsair\n")),new PrintWriter(restore,true),folder).run();
             check(!restore.toString().contains("Não foi possível restaurar"),"Restauração terminal");
             StringWriter resumed=new StringWriter();
             new SessionStore(folder.resolve("sessao-terminal.properties")).save(Side.WHITE,"00:00",java.util.List.of());
-            new TerminalGame(new BufferedReader(new StringReader("restaurar\nfeito\nsair\n")),new PrintWriter(resumed,true),folder,200).run();
-            check(resumed.toString().contains("MOVA") && !resumed.toString().contains("esgotado"),"Sessão antiga zerada deve permitir jogar sem relógio");
+            new TerminalGame(new BufferedReader(new StringReader("restaurar\n00:00\n14:30\nfeito 14:35\nsair\n")),new PrintWriter(resumed,true),folder,200).run();
+            check(resumed.toString().contains("Confira o relógio físico") && resumed.toString().contains("MOVA"),"Relógio esgotado exige sincronização");
+            check(new SessionStore(folder.resolve("sessao-terminal.properties")).load().clock().equals("14:35"),"Relógio físico prevalece após confirmação");
             Board beforeMate=new Board();
             var mateHistory=new java.util.ArrayList<com.github.bhlangonijr.chesslib.move.Move>();
             for(String uci:new String[]{"f2f3","e7e5","g2g4"}) {
@@ -39,9 +49,20 @@ public final class TerminalVerification {
             }
             new SessionStore(folder.resolve("sessao-terminal.properties")).save(Side.BLACK,"sem-limite",mateHistory);
             StringWriter finish=new StringWriter();
-            new TerminalGame(new BufferedReader(new StringReader("restaurar\nfeito\n")),new PrintWriter(finish,true),folder,1).run();
+            new TerminalGame(new BufferedReader(new StringReader("restaurar\n14:30\nfeito\n")),new PrintWriter(finish,true),folder,1).run();
             check(finish.toString().contains("Fim: 0-1"),"Busca própria deve concluir o mate no fluxo do terminal");
             check(new SessionStore(folder.resolve("sessao-terminal.properties")).load().moves().size()==4,"Mate confirmado deve ficar salvo");
+            var mateSession=new SessionStore(folder.resolve("sessao-terminal.properties")).load();
+            var mateRow=mateSession.logRows().getLast().split("\t");
+            check(mateRow[2].equals("d8h4") && mateRow[3].equals("1") && Integer.parseInt(mateRow[4])>0
+                && mateRow[5].equals("mate 1") && mateRow[9].equals("mate_java"),"Métricas da busca Java");
+            Board opening=new Board();
+            check(TimeManager.tournamentBudget(opening,4_000,10_000,30_000)==1_000
+                && TimeManager.tournamentBudget(opening,2_000,10_000,30_000)==1
+                && TimeManager.tournamentBudget(opening,900_000,10_000,30_000)>1_000,"Limites do orçamento com relógio");
+            new TerminalGame(new BufferedReader(new StringReader("armageddon pretas 0\nsair\n")),new PrintWriter(new StringWriter(),true),folder).run();
+            var armageddon=new SessionStore(folder.resolve("sessao-terminal.properties")).load();
+            check(armageddon.clock().equals("04:00") && armageddon.increment()==0,"Armageddon preto com incremento informado");
             try(var files=Files.list(folder)) { check(files.anyMatch(p -> p.toString().endsWith(".pgn")),"Exportação PGN"); }
             System.out.println("OK: comandos físicos, roque, en passant, promoção, lance ilegal, motor real, confirmação, PGN e restauração no terminal.");
             System.out.println(transcript.lines().filter(line -> line.contains("MOVA")).findFirst().orElseThrow());

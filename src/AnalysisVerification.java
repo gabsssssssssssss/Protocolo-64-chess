@@ -9,7 +9,7 @@ public final class AnalysisVerification {
         check(Stockfish.parseInfo("info depth 10 score cp 10 lowerbound pv e2e4")==null,"Limite de score não é avaliação exata");
         check(Stockfish.parseInfo("info depth 10 multipv 2 score cp 10 pv e2e4")==null,"Somente PV principal");
         Board black=new Board(); black.doMove(black.legalMoves().stream().filter(m -> m.toString().equals("e2e4")).findFirst().orElseThrow(),true);
-        String rendered=AnalysisText.format(new Stockfish.Analysis("e7e5",-42,null,18,List.of("e7e5","g1f3")),black.getFen());
+        String rendered=AnalysisText.format(new Stockfish.Analysis("e7e5",-42,null,18,List.of("e7e5","g1f3"),null,null),black.getFen());
         check(rendered.contains("+0.42") && rendered.contains("e5 Nf3"),"Perspectiva das brancas e SAN");
         try(Stockfish engine=new Stockfish(Stockfish.locate())) {
             var initial=engine.analyse(new Board().getFen(),"",200);

@@ -6,7 +6,7 @@ import java.util.*;
 
 /** Snapshot validado e substituído atomicamente quando o sistema de arquivos suporta. */
 public final class SessionStore {
-    public record Session(Side color, String clock, List<Move> moves) {}
+    public record Session(Side color, String clock, List<Move> moves, UUID matchId, List<String> logRows, long increment) {}
     private final Path path;
     @FunctionalInterface interface Mover { void move(Path from,Path to,boolean atomic) throws IOException; }
     private final Mover mover;
@@ -16,6 +16,9 @@ public final class SessionStore {
     }); }
     SessionStore(Path path,Mover mover) { this.path=path.toAbsolutePath().normalize(); this.mover=mover; }
     public void save(Side color,String clock,List<Move> moves) throws IOException {
+        save(color,clock,moves,null,List.of(),TimeManager.INCREMENT_MILLIS);
+    }
+    public void save(Side color,String clock,List<Move> moves,UUID matchId,List<String> logRows,long increment) throws IOException {
         try { if(!"sem-limite".equals(clock)) {
             String[] parts=clock.trim().split(":");
             if(parts.length!=2) throw new IllegalArgumentException();
@@ -28,6 +31,11 @@ public final class SessionStore {
         values.setProperty("version","1"); values.setProperty("color",color.name());
         values.setProperty("clock",clock);
         values.setProperty("moves",String.join(" ",moves.stream().map(Move::toString).toList()));
+        if(matchId!=null) {
+            values.setProperty("matchId",matchId.toString());
+            values.setProperty("log",String.join("\n",logRows));
+            values.setProperty("incrementMillis",Long.toString(increment));
+        }
         Files.createDirectories(path.toAbsolutePath().getParent());
         Path temporary=Files.createTempFile(path.toAbsolutePath().getParent(),"session-",".tmp");
         try {
@@ -65,7 +73,12 @@ public final class SessionStore {
                 if(!board.doMove(move,true)) throw new IllegalArgumentException("Sessão inválida.");
                 moves.add(move);
             }
-            return new Session(color,clock,List.copyOf(moves));
+            String matchId=values.getProperty("matchId");
+            List<String> rows=values.getProperty("log","").lines().toList();
+            if(matchId!=null && rows.size()!=moves.size()) throw new IllegalArgumentException("Log da sessão incompleto.");
+            long increment=Long.parseLong(values.getProperty("incrementMillis",Long.toString(TimeManager.INCREMENT_MILLIS)));
+            if(increment<0 || increment>999_000) throw new IllegalArgumentException("Incremento inválido.");
+            return new Session(color,clock,List.copyOf(moves),matchId==null ? null : UUID.fromString(matchId),rows,increment);
         } catch(RuntimeException e) { throw new IOException("Não foi possível validar a sessão: "+e.getMessage(),e); }
     }
 }

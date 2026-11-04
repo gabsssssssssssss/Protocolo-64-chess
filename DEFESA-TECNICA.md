@@ -4,7 +4,9 @@
 
 Além da gestão descrita abaixo, o projeto implementa `TacticalSearch.mateInOne`: enumera os lances legais, simula cada um em uma cópia do tabuleiro e testa se o adversário ficou em xeque-mate. Se encontrar, devolve esse lance sem consultar o Stockfish. Se não encontrar, delega a busca ao motor com o orçamento próprio. A seleção utiliza as regras da chesslib, não uma avaliação ou resposta da API do Stockfish. É executada no terminal e na interface. É uma busca exata limitada a um lance; não resolve combinações mais longas nem demonstra superioridade sobre o Stockfish.
 
-O projeto utiliza o Stockfish 19 para busca e avaliação, a chesslib para regras e uma política Java específica do projeto para decidir a duração da busca em cada posição. A implementação está em `TimeManager.allocateForPosition(Board)`. Essa função é chamada efetivamente por `TerminalGame` e `ChessChallenge` antes de cada cálculo, e seu resultado determina o parâmetro `go movetime` enviado ao Stockfish. Não há relógio acumulado nem encerramento da partida por tempo dentro desses modos.
+O projeto utiliza o Stockfish 19 para busca e avaliação, a chesslib para regras e a política Java de `TimeManager.allocateForPosition(Board)` para estimar quanto vale gastar em cada posição. No terminal, `tournamentBudget` combina essa estimativa com o saldo da partida. O resultado determina o `go movetime` enviado ao Stockfish. A interface gráfica de treino usa o orçamento por posição.
+
+No terminal, o saldo estimado parte de 900.000 ms, desconta o tempo decorrido no nosso turno e soma 10.000 ms após a confirmação do lance. Para a busca, toma-se o menor valor entre orçamento posicional, teto, saldo menos 3.000 ms e incremento mais um trigésimo do saldo acima dessa reserva. Abaixo da reserva, o pedido ao Stockfish é de 1 ms. O relógio físico prevalece e permite sincronização manual. O ajuste de relógio e o log foram implementados com assistência do Codex.
 
 O FAQ fornecido pela equipe inclui gestão de tempo entre os componentes decisórios admitidos. Esta proposta gerencia o tempo de cálculo por lance externamente ao núcleo C++. A aceitação desse formato deve ser confirmada com a organização; este documento não certifica conformidade integral com o regulamento.
 
@@ -40,7 +42,7 @@ Essa política pode produzir uma escolha diferente por interromper a busca em ou
 ## Como demonstrar
 
 1. Abra `src/TimeManager.java` e explique a fórmula com suas próprias palavras.
-2. Mostre a chamada `allocateForPosition(board)` em `TerminalGame` e `ChessChallenge` e o uso de `budget.millis()` no cálculo.
+2. Mostre a chamada `tournamentBudget` em `TerminalGame` e como o orçamento chega ao Stockfish por `go movetime`.
 3. Mostre `Stockfish.play`, que envia `go movetime` ao processo local.
 4. Execute `powershell -ExecutionPolicy Bypass -File verificar.ps1`. A verificação da política cobre abertura, meio-jogo, final, xeque, resposta forçada, en passant, promoção, limites e posições terminadas, sem modificar o tabuleiro.
 5. Abra `tmp/gestao-propria-exemplos.csv`, gerado por esse teste, para mostrar os orçamentos e motivos. O relatório demonstra as decisões da política, não ganho de força.
@@ -56,7 +58,7 @@ O novo `testar-forca.ps1` compara a seleção de mate imediato e a política por
 
 **Qual componente foi implementado no projeto?** A busca e seleção de mate imediato, mais a decisão de quanto tempo calcular nas demais posições, expressas em Java e utilizadas nos dois modos de partida interativos. A interface, o salvamento e a importação PGN também pertencem à aplicação, mas não são apresentados como modificação decisória do motor.
 
-**Como funciona sem relógio?** A partida não tem um saldo de minutos. Cada posição recebe um orçamento independente, que termina a busca e permite ao motor devolver a jogada. Isso não remove o relógio físico nem as regras de tempo do evento.
+**Como o saldo é sincronizado?** Informe os minutos e segundos mostrados no relógio físico junto ao lance adversário ou após `feito`. A restauração também pede o valor físico.
 
 **O dataset do Carlsen escolhe os lances?** Não. Ele serve para estudo e estatísticas; não participa da decisão do motor nesta versão.
 

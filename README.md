@@ -16,17 +16,19 @@ Execute `powershell -ExecutionPolicy Bypass -File diagnosticar.ps1` para verific
 
 ### Campeonato com tabuleiro físico: terminal do VS Code
 
-A saída durante a partida é reduzida às instruções da nossa jogada e aos prompts de cor, lance adversário e confirmação. Não pergunta tempo nem imprime orçamento de cálculo, mensagens de registro ou logs do motor. Erros de entrada/operação continuam aparecendo quando necessário; comandos explícitos como `tabuleiro` e `historico` mostram o conteúdo solicitado.
+O terminal mostra a instrução da nossa jogada, o UCI para anunciar e os prompts de entrada. As métricas ficam no arquivo de log.
 
 No VS Code, pressione **Ctrl+Shift+B** para compilar e iniciar o jogo no terminal integrado. Outra opção é executar `powershell -ExecutionPolicy Bypass -File jogar-terminal.ps1` no terminal. Para depurar, pressione F5 e selecione **Jogar no terminal (tabuleiro físico)**. Não exige abrir a janela gráfica.
 
-1. Escolha `brancas` ou `pretas` (ou `restaurar` para recuperar a sessão do terminal).
-2. Na vez do adversário, registre a origem/destino: `e7e5`, `e7 e5` ou SAN como `Nf3`, `O-O`. Para promoção por coordenadas, use `e7e8q` (q=dama, r=torre, b=bispo, n=cavalo).
-3. Na nossa vez, a gestão própria decide a duração do cálculo conforme a posição, até 30 segundos. Não existe relógio acumulado nem derrota por tempo dentro do aplicativo.
-4. Leia a instrução **MOVA O PEÃO DE E2 PARA E4**. Captura, roque, en passant e promoção têm instruções adicionais.
-5. Execute no tabuleiro físico e digite `feito`. Só então o programa registra nosso lance. `cancelar` volta para recalcular; `sair` encerra sem confirmar a recomendação.
+1. Abra o programa antes de acionar o relógio para o Stockfish carregar. Escolha `brancas`, `pretas` ou `restaurar`. Nas partidas regulares, o saldo começa em 15 minutos e recebe 10 segundos a cada lance confirmado.
+2. Repita o UCI anunciado pelo adversário. Depois que ele mover a peça e acionar o relógio, digite o lance, como `e7e5` ou `e7e8q`. Use `e7e5 14:32` para sincronizar com o tempo restante **da sua cor** na entrada.
+3. Na nossa vez, o orçamento usa a posição, o saldo e o incremento, com teto de 30 segundos e margem de 3 segundos para operação física quando há tempo disponível.
+4. Anuncie o UCI mostrado e aguarde a confirmação do adversário. Faça a jogada física, acione o relógio e digite `feito`. Para sincronizar com o valor físico já acrescido do incremento, use `feito 14:42`. `cancelar` recalcula; `sair` encerra com os lances já confirmados.
+5. Entregue o arquivo `partidas/partida-<id>.log` mostrado na abertura. Cada linha corresponde a um lance confirmado. A avaliação usa a perspectiva do lado a jogar. `NA` indica métrica indisponível, por exemplo num lance informado pelo adversário ou importado de uma sessão antiga. O tempo do turno exibido no log é uma estimativa entre o registro do lance anterior e a confirmação do nosso lance. O tempo de cálculo vem do Stockfish ou da busca Java.
 
-Comandos no prompt de lance adversário: `tabuleiro`, `historico`, `desfazer`, `salvar`, `sair`. `desfazer` exige corrigir também as peças físicas. A sessão fica em `partidas/sessao-terminal.properties`, separada da interface gráfica, marcada como `sem-limite`. Sessões antigas continuam restauráveis, inclusive com relógio zerado; o valor antigo é ignorado. Se sair ou ocorrer uma falha antes de `feito`, o último lance sugerido não estará no histórico; confira as peças antes de restaurar.
+No prompt adversário, use `tabuleiro`, `historico`, `desfazer`, `salvar` ou `sair`. Ao restaurar `partidas/sessao-terminal.properties` ou desfazer um lance, confira as peças e informe o tempo físico. O log acompanha o histórico confirmado e é reconstruído na restauração. O relógio físico é a referência para o árbitro.
+
+Para o Armageddon, digite `armageddon brancas SEGUNDOS` ou `armageddon pretas SEGUNDOS`. O saldo inicial é de 5 minutos para brancas e 4 para pretas. Informe o incremento determinado pelo árbitro, usando `0` se a partida for sem incremento.
 
 Tudo funciona localmente usando o mesmo Stockfish da interface. O dataset de estudo não participa da escolha dos lances nesta versão.
 
@@ -76,7 +78,7 @@ O salvamento usa caminhos absolutos e tenta substituição atômica, com alterna
 - `TacticalSearch.java`: seleção própria exata de mate em um lance, funcionando antes do Stockfish nos modos interativos e no comparador novo.
 - `Verification.java`: verificações de regras especiais, perft e integração com motor real.
 
-A busca e a avaliação internas do Stockfish não foram alteradas. As contribuições decisórias propostas são a seleção externa de mate imediato e a gestão do tempo de cálculo por posição, funcionais nas partidas interativas, sem relógio acumulado. Consulte `DEFESA-TECNICA.md` para os algoritmos, justificativas, limites, demonstração e respostas para a arguição. É necessário confirmar com a organização a aceitação dessa abordagem e tratar com transparência a assistência de IA; não declarar conformidade integral nem autoria da equipe sobre o Stockfish e a chesslib.
+A busca e a avaliação internas do Stockfish permanecem as da versão declarada. As contribuições decisórias propostas são a seleção externa de mate imediato e a gestão do tempo de cálculo por posição, combinada com o saldo da partida no terminal. Consulte `DEFESA-TECNICA.md` para os algoritmos e a demonstração. O desenvolvimento contou com assistência de ferramentas de geração de código, permitidas conforme a orientação recebida da coordenação.
 
 Código inicial elaborado com assistência do Codex. Mantenham um registro transparente das contribuições e sigam eventuais orientações da faculdade sobre ferramentas de IA.
 
