@@ -32,6 +32,12 @@ public final class Verification {
         check(b.isMated(),"Detecção de mate");
         check(list.toSanArray()[3].equals("Qh4#"),"Exportação SAN");
         b=new Board();
+        for(String move:new String[]{"g1f3","g8f6","f3g1","f6g8","g1f3","g8f6","f3g1","f6g8"}) b.doMove(legal(b,move),true);
+        check(b.isDraw(),"Empate por tripla repetição com histórico completo");
+        b.loadFromFen("4k3/8/8/8/8/8/8/R3K3 w - - 99 1");
+        b.doMove(legal(b,"a1a2"),true);
+        check(b.isDraw(),"Empate pela regra dos 50 lances");
+        b=new Board();
         for(long remaining:new long[]{1,50,1000,10000,1500000}) {
             long allocation=TimeManager.allocate(b,remaining).millis();
             check(allocation>0 && allocation<=remaining,"Orçamento excede relógio");

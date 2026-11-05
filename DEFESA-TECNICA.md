@@ -70,4 +70,10 @@ O novo `testar-forca.ps1` compara a seleção de mate imediato e a política por
 
 ## Antes da entrega
 
+O modo padrão de `iniciar.bat` é o terminal de campeonato. No encerramento, o operador informa o resultado do árbitro e ambos os saldos físicos pelo comando `encerrar RESULTADO NOSSO_TEMPO TEMPO_ADVERSARIO`. Um relatório por ID registra esses dados para a soma de saldos da melhor de três e descreve as origens das métricas. O PGN conserva o resultado informado. A modalidade Armageddon sobrevive à restauração e seu relatório identifica a classificação das pretas em empate. A interface gráfica é identificada como treino e não substitui o terminal na competição.
+
+Os lances adversários recebem avaliação material local Java de uma folha, profundidade 1, PV igual ao lance e duração medida. A origem é `adversario_avaliacao_local_java`. Esses números descrevem a avaliação executada pelo nosso software no turno da equipe. Se as métricas do Stockfish estiverem incompletas para um lance nosso, a origem `stockfish_avaliacao_local_java` identifica a avaliação material desse lance escolhido pelo motor. Dados ausentes de sessões antigas continuam identificados como indisponíveis. O tempo do turno adversário não é medido pelo nosso relógio.
+
+As correções da versão enviada foram autorizadas pelo coordenador em resposta apresentada pela equipe. Essa autorização permite a revisão; a equipe continua responsável por declarar a assistência de IA, explicar os componentes e esclarecer a interpretação de autoria própria e de métricas adversárias com a banca.
+
 Confirmar com a organização a aceitação da gestão externa por lance como componente significativo, especialmente porque o FAQ exige autoria própria. A equipe deve cumprir o credenciamento, declarar bases e versões, fornecer acesso ao repositório e preparar a arguição. O histórico Git registra as alterações, mas, sozinho, não comprova domínio técnico nem autoria independente. As demais condições do PDF precisam ser conferidas separadamente; não estão certificadas por esta implementação.

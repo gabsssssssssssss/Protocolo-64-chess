@@ -24,7 +24,7 @@ public final class ChessChallenge extends JFrame {
     private final SessionStore session;
 
     private ChessChallenge(Path sessionPath) {
-        super("Chess Challenge • Java + Stockfish local");
+        super("Chess Challenge • TREINO sem relógio de campeonato");
         session=new SessionStore(sessionPath);
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         boardView.onClick(this::click);

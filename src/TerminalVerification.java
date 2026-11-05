@@ -26,7 +26,8 @@ public final class TerminalVerification {
             check(TerminalGame.readClock(saved.clock())>=900_000,"Incremento registrado");
             Path log=folder.resolve("partida-"+saved.matchId()+".log");
             var logLines=Files.readAllLines(log);
-            check(logLines.size()==3 && logLines.get(1).startsWith("1\tbrancas\te2e4\tNA\tNA"),"Lance adversário no log");
+            check(logLines.size()==3 && logLines.get(1).startsWith("1\tbrancas\te2e4\t1\t1\tcp 0\te2e4\t"),"Avaliação local real do lance adversário no log");
+            check(logLines.get(1).endsWith("adversario_avaliacao_local_java"),"Origem da avaliação adversária explícita");
             var metrics=logLines.get(2).split("\t");
             check(metrics[1].equals("pretas") && Integer.parseInt(metrics[3])>0 && Long.parseLong(metrics[4])>0
                 && !metrics[5].equals("NA") && metrics[6].startsWith(metrics[2]) && Long.parseLong(metrics[7])>=0,
@@ -58,7 +59,28 @@ public final class TerminalVerification {
                 && mateRow[5].equals("mate 1") && mateRow[9].equals("mate_java"),"Métricas da busca Java");
             new TerminalGame(new BufferedReader(new StringReader("armageddon pretas 0\nsair\n")),new PrintWriter(new StringWriter(),true),folder).run();
             var armageddon=new SessionStore(folder.resolve("sessao-terminal.properties")).load();
-            check(armageddon.clock().equals("04:00") && armageddon.increment()==0,"Armageddon preto com incremento informado");
+            check(armageddon.clock().equals("04:00") && armageddon.increment()==0 && armageddon.armageddon(),"Armageddon preto com incremento informado");
+            new TerminalGame(new BufferedReader(new StringReader("restaurar\n03:25\nencerrar 1/2-1/2 03:25 04:30\n")),new PrintWriter(new StringWriter(),true),folder).run();
+            check(Files.readString(folder.resolve("resultado-"+armageddon.matchId()+".txt")).contains("pretas classificadas"),
+                "Armageddon restaurado conserva regra de classificação por empate");
+            new TerminalGame(new BufferedReader(new StringReader("armageddon brancas 0\nsair\n")),new PrintWriter(new StringWriter(),true),folder,1).run();
+            check(new SessionStore(folder.resolve("sessao-terminal.properties")).load().clock().equals("05:00"),
+                "Armageddon branco começa com cinco minutos sem confirmar lance pendente");
+            StringWriter ending=new StringWriter();
+            new TerminalGame(new BufferedReader(new StringReader("pretas\nencerrar 0-1 errado 01:12\nencerrar 0-1 02:34 00:00\n")),new PrintWriter(ending,true),folder).run();
+            var completed=new SessionStore(folder.resolve("sessao-terminal.properties")).load();
+            check(completed.clock().equals("02:34") && completed.moves().isEmpty(),"Encerramento registra saldo físico sem inventar lance");
+            String report=Files.readString(folder.resolve("resultado-"+completed.matchId()+".txt"));
+            check(report.contains("154000") && report.contains("brancas-pretas): 0-1"),"Resultado com cor e saldo para desempate");
+            check(ending.toString().contains("Tempos inválidos"),"Encerramento inválido permite nova tentativa");
+            StringWriter closed=new StringWriter();
+            new TerminalGame(new BufferedReader(new StringReader("restaurar\nsair\n")),new PrintWriter(closed,true),folder).run();
+            check(closed.toString().contains("Partida já encerrada"),"Partida encerrada preservada na restauração");
+            check(TimeManager.INITIAL_MILLIS==900_000 && TimeManager.INCREMENT_MILLIS==10_000,"Ritmo exigido pelo FAQ");
+            new TerminalGame(new BufferedReader(new StringReader("brancas\nfeito\nsair\n")),new PrintWriter(new StringWriter(),true),folder,1).run();
+            var fast=new SessionStore(folder.resolve("sessao-terminal.properties")).load();
+            String[] fastMetrics=fast.logRows().getFirst().split("\t");
+            for(int column=3;column<=7;column++) check(!fastMetrics[column].equals("NA"),"Log completo mesmo com cálculo de 1 ms");
             try(var files=Files.list(folder)) { check(files.anyMatch(p -> p.toString().endsWith(".pgn")),"Exportação PGN"); }
             System.out.println("OK: comandos físicos, roque, en passant, promoção, lance ilegal, motor real, confirmação, PGN e restauração no terminal.");
             System.out.println(transcript.lines().filter(line -> line.contains("MOVA")).findFirst().orElseThrow());

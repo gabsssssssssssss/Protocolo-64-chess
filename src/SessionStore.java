@@ -6,7 +6,7 @@ import java.util.*;
 
 /** Snapshot validado e substituído atomicamente quando o sistema de arquivos suporta. */
 public final class SessionStore {
-    public record Session(Side color, String clock, List<Move> moves, UUID matchId, List<String> logRows, long increment) {}
+    public record Session(Side color, String clock, List<Move> moves, UUID matchId, List<String> logRows, long increment, boolean armageddon) {}
     private final Path path;
     @FunctionalInterface interface Mover { void move(Path from,Path to,boolean atomic) throws IOException; }
     private final Mover mover;
@@ -19,6 +19,9 @@ public final class SessionStore {
         save(color,clock,moves,null,List.of(),TimeManager.INCREMENT_MILLIS);
     }
     public void save(Side color,String clock,List<Move> moves,UUID matchId,List<String> logRows,long increment) throws IOException {
+        save(color,clock,moves,matchId,logRows,increment,false);
+    }
+    public void save(Side color,String clock,List<Move> moves,UUID matchId,List<String> logRows,long increment,boolean armageddon) throws IOException {
         try { if(!"sem-limite".equals(clock)) {
             String[] parts=clock.trim().split(":");
             if(parts.length!=2) throw new IllegalArgumentException();
@@ -35,6 +38,7 @@ public final class SessionStore {
             values.setProperty("matchId",matchId.toString());
             values.setProperty("log",String.join("\n",logRows));
             values.setProperty("incrementMillis",Long.toString(increment));
+            values.setProperty("armageddon",Boolean.toString(armageddon));
         }
         Files.createDirectories(path.toAbsolutePath().getParent());
         Path temporary=Files.createTempFile(path.toAbsolutePath().getParent(),"session-",".tmp");
@@ -78,7 +82,9 @@ public final class SessionStore {
             if(matchId!=null && rows.size()!=moves.size()) throw new IllegalArgumentException("Log da sessão incompleto.");
             long increment=Long.parseLong(values.getProperty("incrementMillis",Long.toString(TimeManager.INCREMENT_MILLIS)));
             if(increment<0 || increment>999_000) throw new IllegalArgumentException("Incremento inválido.");
-            return new Session(color,clock,List.copyOf(moves),matchId==null ? null : UUID.fromString(matchId),rows,increment);
+            String mode=values.getProperty("armageddon","false");
+            if(!mode.equals("true") && !mode.equals("false")) throw new IllegalArgumentException("Modo da partida inválido.");
+            return new Session(color,clock,List.copyOf(moves),matchId==null ? null : UUID.fromString(matchId),rows,increment,Boolean.parseBoolean(mode));
         } catch(RuntimeException e) { throw new IOException("Não foi possível validar a sessão: "+e.getMessage(),e); }
     }
 }

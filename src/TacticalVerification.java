@@ -23,6 +23,19 @@ public final class TacticalVerification {
         var promoted=TacticalSearch.mateInOne(promotion).orElseThrow();
         check(promoted.getPromotion()!=Piece.NONE,"Busca deve considerar promoções");
         promotion.doMove(promoted,true); check(promotion.isMated(),"Promoção escolhida deve dar mate");
+        Board capture=new Board(); capture.loadFromFen("4k3/8/8/8/8/8/q7/R3K3 w - - 0 1");
+        String captureFen=capture.getFen();
+        var captureHistory=List.copyOf(capture.getHistory());
+        var assessed=TacticalSearch.assessMove(capture,TerminalGame.parseMove(capture,"a1a2"));
+        check(assessed.centipawns()==500 && assessed.depth()==1 && assessed.nodes()==1
+            && assessed.line().equals(List.of("a1a2")) && assessed.timeMillis()>=0,"Avaliação material local mede a folha real");
+        check(capture.getFen().equals(captureFen) && capture.getHistory().equals(captureHistory),"Avaliação de log não muda a partida");
+        Board blackCapture=new Board(); blackCapture.loadFromFen("r3k3/Q7/8/8/8/8/8/4K3 b - - 0 1");
+        check(TacticalSearch.assessMove(blackCapture,TerminalGame.parseMove(blackCapture,"a8a7")).centipawns()==500,
+            "Avaliação local na perspectiva da cor que jogou");
+        Board mateAssessment=new Board(); mateAssessment.loadFromFen(mates[0]);
+        check(TacticalSearch.assessMove(mateAssessment,TacticalSearch.mateInOne(mateAssessment).orElseThrow()).mate()==1,
+            "Log local distingue mate de avaliação material");
         System.out.println("OK: seleção própria de mate com ambas as cores, promoção, rejeição de afogamento e preservação da partida.");
     }
 }

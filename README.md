@@ -20,22 +20,34 @@ O terminal mostra a instrução da nossa jogada, o UCI para anunciar e os prompt
 
 No VS Code, pressione **Ctrl+Shift+B** para compilar e iniciar o jogo no terminal integrado. Outra opção é executar `powershell -ExecutionPolicy Bypass -File jogar-terminal.ps1` no terminal. Para depurar, pressione F5 e selecione **Jogar no terminal (tabuleiro físico)**. Não exige abrir a janela gráfica.
 
+`iniciar.bat` também abre esse modo de campeonato. A interface gráfica é identificada como treino, sem relógio acumulado, e pode ser aberta pela configuração **Treino gráfico (sem relógio de campeonato)** do VS Code ou por `java -cp "build;vendor/*" ChessChallenge` após compilar.
+
 1. Abra o programa antes de acionar o relógio para o Stockfish carregar. Escolha `brancas`, `pretas` ou `restaurar`. Nas partidas regulares, o saldo começa em 15 minutos e recebe 10 segundos a cada lance confirmado.
 2. Repita o UCI anunciado pelo adversário. Depois que ele mover a peça e acionar o relógio, digite o lance, como `e7e5` ou `e7e8q`. Use `e7e5 14:32` para sincronizar com o tempo restante **da sua cor** na entrada.
 3. Na nossa vez, com mais de 3 minutos o motor recebe até 5 segundos, ou 8 em posições táticas. Com 1 a 3 minutos, o teto cai para 3 segundos. Abaixo de 1 minuto, cai para 2 segundos, e abaixo de 20 segundos, para 1 segundo. Um único lance legal recebe até 100 ms. O saldo, o incremento e a reserva física podem reduzir esses tetos.
 4. Anuncie o UCI mostrado e aguarde a confirmação do adversário. Faça a jogada física, acione o relógio e digite `feito`. Para sincronizar com o valor físico já acrescido do incremento, use `feito 14:42`. `cancelar` recalcula; `sair` encerra com os lances já confirmados.
-5. Entregue o arquivo `partidas/partida-<id>.log` mostrado na abertura. Cada linha corresponde a um lance confirmado. A avaliação usa a perspectiva do lado a jogar. `NA` indica métrica indisponível, por exemplo num lance informado pelo adversário ou importado de uma sessão antiga. O tempo do turno exibido no log é uma estimativa entre o registro do lance anterior e a confirmação do nosso lance. O tempo de cálculo vem do Stockfish ou da busca Java.
+5. Entregue o arquivo `partidas/partida-<id>.log` mostrado na abertura e o relatório de encerramento. Cada linha corresponde a um lance confirmado e contém número, cor, UCI, profundidade, nós, avaliação, PV e tempo de cálculo local. A avaliação usa a perspectiva da cor que executou o lance. A coluna `origem` identifica Stockfish, seleção Java de mate ou avaliação material Java. O tempo do nosso turno é uma estimativa entre a entrada do lance adversário e a confirmação do nosso lance; o tempo de cálculo vem do componente indicado em `origem`.
 
 No prompt adversário, use `tabuleiro`, `historico`, `desfazer`, `salvar` ou `sair`. Ao restaurar `partidas/sessao-terminal.properties` ou desfazer um lance, confira as peças e informe o tempo físico. O log acompanha o histórico confirmado e é reconstruído na restauração. O relógio físico é a referência para o árbitro.
 
+Ao encerrar por mate, empate, abandono ou tempo, confirme o resultado com o árbitro e digite `encerrar RESULTADO NOSSO_TEMPO TEMPO_ADVERSARIO`, por exemplo `encerrar 0-1 02:34 00:00`. O resultado usa sempre a ordem brancas-pretas. Os tempos são os saldos físicos em `MM:SS`. O comando é aceito na entrada adversária, na confirmação do nosso lance, na sincronização após tempo esgotado e após detectar fim de partida. Ele não aplica a jogada ainda pendente de confirmação. Registre primeiro qualquer lance que tenha sido efetivamente executado.
+
+São gravados o PGN com o resultado informado e `partidas/resultado-<id>.txt`, contendo nossa cor, incremento e ambos os saldos físicos em milissegundos. Para o desempate, some o nosso saldo dos três relatórios do confronto, uma vez por ID de partida. O relatório de encerramento impede retomar essa sessão como partida em andamento. `sair` continua permitindo pausar e restaurar sem registrar um resultado final.
+
+Nos lances adversários, `adversario_avaliacao_local_java` registra nossa avaliação após simular o lance recebido. É uma avaliação material de profundidade 1, com uma posição folha avaliada, PV composta pelo próprio lance e duração medida localmente. Os valores materiais em centipeões são peão 100, cavalo 320, bispo 330, torre 500 e dama 900; mate e empate detectados na folha recebem avaliação própria. Essa análise é executada no nosso turno e seu custo entra no nosso orçamento. Esses dados descrevem o nosso avaliador local e não medem o motor adversário.
+
+Se o Stockfish retornar um lance legal sem métricas completas ou com PV que começa em outro lance, `stockfish_avaliacao_local_java` registra a mesma avaliação material local do lance escolhido. Nesse caso, profundidade, nós, avaliação, PV e tempo correspondem ao avaliador Java. A seleção continua sendo do Stockfish. Métricas antigas são preservadas na restauração; `NA` permanece quando o dado não foi coletado na versão de origem. O tempo de turno adversário também permanece `NA`, pois o programa não mede o relógio adversário durante sua jogada.
+
 Para o Armageddon, digite `armageddon brancas SEGUNDOS` ou `armageddon pretas SEGUNDOS`. O saldo inicial é de 5 minutos para brancas e 4 para pretas. Informe o incremento determinado pelo árbitro, usando `0` se a partida for sem incremento.
+
+A modalidade é salva na sessão e conservada na restauração. Um resultado de empate em Armageddon registra no relatório a classificação das pretas. As sessões anteriores a esse campo são interpretadas como regulares; para retomar um Armageddon antigo, confirme a modalidade antes do evento.
 
 Tudo funciona localmente usando o mesmo Stockfish da interface. O dataset de estudo não participa da escolha dos lances nesta versão.
 
 O tabuleiro usa tema escuro, moldura com detalhe dourado, casas verde/marfim e peças vetoriais próprias com gradientes e contornos. Não depende de fontes de símbolos, imagens externas ou downloads para desenhar as peças. Inclui coordenadas externas, destaque do último lance, indicação de seleção, hover e destinos legais (ponto para casa vazia, anel para captura). O mesmo componente é usado na partida, no estudo PGN e no confronto automático.
 
 1. Na primeira preparação, execute `powershell -ExecutionPolicy Bypass -File preparar.ps1` com internet.
-2. Abra `iniciar.bat`. Ele compila e abre a interface.
+2. Para treino gráfico, compile e execute `java -cp "build;vendor/*" ChessChallenge`, ou escolha **Treino gráfico (sem relógio de campeonato)** no VS Code. `iniciar.bat` abre o campeonato no terminal.
 3. Escolha nossa cor antes do primeiro lance. Com brancas, clique em **Calcular nosso lance**. Com pretas, registre primeiro o lance adversário.
 4. Registre o adversário clicando na origem e no destino, ou digitando coordenadas como `e2e4`. Roque curto branco: `e1g1`; promoção: `e7e8q`.
 5. Clique em **Calcular nosso lance**. A gestão própria distribui até 30 segundos por posição; a partida não tem relógio interno nem campo de tempo restante.
@@ -96,7 +108,7 @@ Para assistir aos confrontos automáticos, abra `assistir.bat`. O tabuleiro acom
 
 Execute `powershell -ExecutionPolicy Bypass -File verificar.ps1`.
 
-No VS Code, o projeto reconhece `src/` e os JARs de `vendor/`. Com a extensão recomendada **Extension Pack for Java**, abra Executar e Depurar e selecione **Abrir Chess Challenge**. Os scripts continuam funcionando sem extensões.
+No VS Code, o projeto reconhece `src/` e os JARs de `vendor/`. Com a extensão recomendada **Extension Pack for Java**, abra Executar e Depurar e selecione **Jogar no terminal (tabuleiro físico)** para competição ou **Treino gráfico (sem relógio de campeonato)** para treino. Os scripts continuam funcionando sem extensões.
 
 Para comparar a política própria com a gestão original, execute `powershell -ExecutionPolicy Bypass -File comparar.ps1 -Segundos 30`. São duas partidas com cores invertidas e mesma abertura, usando processos separados, mesmo número de threads e mesma memória. PGNs e tempos por lance ficam em `partidas/comparacao-.../`. O orçamento original usa `go wtime/btime`; o próprio usa `go movetime`. Inicialização dos processos fica fora do relógio; duração da comunicação e busca entra no relógio. Há limite de segurança de 400 meios-lances, que produz partida inacabada (`*`). O teste rápido verifica integração; para avaliar força são necessárias muitas partidas e aberturas diferentes. A comparação automática não inclui tempo de movimentação de peças físicas.
 
@@ -118,4 +130,6 @@ Após configurar o repositório remoto, salve os arquivos no VS Code, revise sua
 
 Cada melhoria concluída deve receber uma descrição clara. Não coloque senhas ou tokens no código; arquivos `.env`, chaves privadas, dependências, compilações e partidas estão ignorados. Os commits anteriores do projeto são preservados no envio. O script não executa os testes: use `verificar.ps1` quando a alteração exigir validação.
 
-O código-fonte está versionado; dependências, binários e partidas ficam fora do Git. A entrega deve incluir as versões e licenças, instruções reproduzíveis, o componente próprio e sua explicação. Data indicada no regulamento: 04/11/2026. Confirme com a organização o formato de envio e os pontos contraditórios do regulamento antes da entrega.
+O código-fonte está versionado; dependências, binários e partidas ficam fora do Git. No credenciamento, declare Stockfish 19, commit `edb0d9db6731067ec50ce619ff372b463bc4dd5d`, chesslib 1.3.7, Commons Lang 3.18.0, execução CPU local e assistência do Codex. Disponibilize à banca o repositório e o commit exato utilizado, preserve as licenças e forneça os arquivos locais de terceiros quando necessário. As origens e hashes estão em `ORIGENS.md`.
+
+Durante cada partida use um notebook da equipe, desligue Wi-Fi e dados móveis antes da verificação do árbitro e mantenha o tabuleiro físico como referência. Siga as cores do pareamento, alternando nas três partidas; o árbitro define resultados e o sorteio do Armageddon. Entregue o log e o relatório ao fim de cada partida. A equipe deve compreender e defender na arguição a gestão de tempo e a seleção de mate imediato, inclusive suas limitações e a assistência de IA declarada.

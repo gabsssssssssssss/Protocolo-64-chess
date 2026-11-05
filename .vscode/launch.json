@@ -11,7 +11,7 @@
     },
     {
       "type": "java",
-      "name": "Abrir Chess Challenge",
+      "name": "Treino gráfico (sem relógio de campeonato)",
       "request": "launch",
       "mainClass": "ChessChallenge",
       "cwd": "${workspaceFolder}"
