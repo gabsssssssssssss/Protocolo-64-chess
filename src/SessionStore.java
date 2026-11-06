@@ -34,11 +34,11 @@ public final class SessionStore {
         values.setProperty("version","1"); values.setProperty("color",color.name());
         values.setProperty("clock",clock);
         values.setProperty("moves",String.join(" ",moves.stream().map(Move::toString).toList()));
+        values.setProperty("incrementMillis",Long.toString(increment));
+        values.setProperty("armageddon",Boolean.toString(armageddon));
         if(matchId!=null) {
             values.setProperty("matchId",matchId.toString());
             values.setProperty("log",String.join("\n",logRows));
-            values.setProperty("incrementMillis",Long.toString(increment));
-            values.setProperty("armageddon",Boolean.toString(armageddon));
         }
         Files.createDirectories(path.toAbsolutePath().getParent());
         Path temporary=Files.createTempFile(path.toAbsolutePath().getParent(),"session-",".tmp");
@@ -80,7 +80,8 @@ public final class SessionStore {
             String matchId=values.getProperty("matchId");
             List<String> rows=values.getProperty("log","").lines().toList();
             if(matchId!=null && rows.size()!=moves.size()) throw new IllegalArgumentException("Log da sessão incompleto.");
-            long increment=Long.parseLong(values.getProperty("incrementMillis",Long.toString(TimeManager.INCREMENT_MILLIS)));
+            // Sessões anteriores ao campo usavam incremento de 10 s.
+            long increment=Long.parseLong(values.getProperty("incrementMillis","10000"));
             if(increment<0 || increment>999_000) throw new IllegalArgumentException("Incremento inválido.");
             String mode=values.getProperty("armageddon","false");
             if(!mode.equals("true") && !mode.equals("false")) throw new IllegalArgumentException("Modo da partida inválido.");

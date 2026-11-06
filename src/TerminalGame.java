@@ -38,7 +38,7 @@ public final class TerminalGame {
         output.flush();
     }
     private void playMatch() throws IOException {
-        output.println("CAMPEONATO: 10 minutos por equipe + 10 segundos por lance.");
+        output.println("CAMPEONATO: 10 minutos por equipe, sem incremento. Confira o ritmo com o árbitro.");
         output.println("Repita o UCI adversário. No nosso lance: anuncie, aguarde a repetição, mova e acione o relógio antes de digitar feito.");
         output.println("O tabuleiro e o relógio físicos prevalecem. Lance anulado: cancelar, com o relógio correndo.");
         output.println("Encerramento pelo árbitro: encerrar RESULTADO NOSSO_TEMPO TEMPO_ADVERSARIO (ex.: encerrar 1-0 03:20 00:00).");
@@ -74,6 +74,7 @@ public final class TerminalGame {
             } else output.println("Escolha brancas ou pretas.");
         }
         if(ours==null) return;
+        output.println("Saldo inicial/restaurado: "+remaining/1000+" s; incremento: "+increment/1000+" s por lance.");
         output.println("Log da partida: "+logPath().toAbsolutePath());
         output.println("Métricas adversárias: avaliação material local de profundidade 1, identificada na coluna origem.");
         if(board.getSideToMove()==ours) turnStarted=System.nanoTime();
@@ -196,7 +197,7 @@ public final class TerminalGame {
             +"\nNossa cor: "+(ours==Side.WHITE ? "brancas" : "pretas")
             +"\nNosso saldo físico em ms: "+ownClock+"\nSaldo físico adversário em ms: "+opponentClock
             +"\nIncremento em ms: "+increment+"\nLog: "+logPath().toAbsolutePath()
-            +"\nModalidade: "+(armageddon ? "Armageddon" : "Regular 10+10")
+            +"\nModalidade: "+(armageddon ? "Armageddon" : "Regular")
             +(armageddon && fields[1].equals("1/2-1/2") ? "\nEmpate no Armageddon: pretas classificadas." : "")
             +"\nOrigem adversario_avaliacao_local_java: avaliação material local após simular o lance recebido; profundidade 1, uma folha avaliada, PV igual ao lance."
             +"\nOrigem stockfish_avaliacao_local_java: Stockfish escolheu o lance sem métricas completas; avaliação material local do lance escolhido."

@@ -8,7 +8,7 @@
 - Pacote: https://github.com/official-stockfish/Stockfish/releases/download/sf_19/stockfish-windows-x86-64-universal.zip
 - SHA-256 do ZIP: `3C8BF1F9EA66A09350A40DF4F632288285AC206D99F33AB5842C408FC30B48A7`
 - Licença: GPLv3, texto em `LICENSE` e no pacote original.
-- Nenhuma alteração no código C++. No campeonato, `TerminalGame` usa `TimeManager.tournamentBudget` para gerir o saldo de 10 minutos e o incremento de 10 segundos. A interface de treino usa `TimeManager.allocateForPosition`, sem saldo acumulado. A implementação foi elaborada com assistência do Codex e exige revisão e domínio técnico pela equipe; ver `DEFESA-TECNICA.md`. A autorização para corrigir a versão enviada não constitui confirmação específica da aceitação do componente externo e das condições de autoria.
+- Nenhuma alteração no código C++. No campeonato, `TerminalGame` usa `TimeManager.tournamentBudget` para gerir o saldo de 10 minutos, sem incremento. A interface de treino usa `TimeManager.allocateForPosition`, sem saldo acumulado. A implementação foi elaborada com assistência do Codex e exige revisão e domínio técnico pela equipe; ver `DEFESA-TECNICA.md`. A autorização para corrigir a versão enviada não constitui confirmação específica da aceitação do componente externo e das condições de autoria.
 - `TacticalSearch.mateInOne` implementa uma seleção externa exata de mate em um lance, usando regras da chesslib. Foi elaborada com assistência do Codex e não corresponde a uma modificação da busca interna do Stockfish.
 
 ## chesslib

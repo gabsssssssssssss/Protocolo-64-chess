@@ -3,7 +3,7 @@ import com.github.bhlangonijr.chesslib.move.Move;
 
 /** Política experimental própria; precisa de comparação com o motor original. */
 public final class TimeManager {
-    static final long INITIAL_MILLIS=600_000, INCREMENT_MILLIS=10_000, PHYSICAL_RESERVE_MILLIS=3_000;
+    static final long INITIAL_MILLIS=600_000, INCREMENT_MILLIS=0, PHYSICAL_RESERVE_MILLIS=3_000;
     public record Budget(long millis, String reason) {}
     static long tournamentBudget(Board board,long remaining,long increment,long cap) {
         if(remaining<=PHYSICAL_RESERVE_MILLIS) return 1;

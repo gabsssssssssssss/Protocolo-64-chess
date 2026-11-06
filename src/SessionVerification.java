@@ -14,6 +14,10 @@ public final class SessionVerification {
             var move=TerminalGame.parseMove(board,"e2e4");
             for(int i=0;i<20;i++) store.save(Side.WHITE,"sem-limite",List.of(move));
             check(store.load().moves().size()==1,"Substituições reais sucessivas");
+            check(store.load().increment()==0,"Sessão nova preserva ausência de incremento");
+            Path legacy=folder.resolve("legado.properties");
+            Files.writeString(legacy,"version=1\ncolor=WHITE\nclock=15:00\nmoves=\n");
+            check(new SessionStore(legacy).load().increment()==10_000,"Sessões antigas conservam incremento original");
             int[] attempts={0};
             var windows=new SessionStore(path,(from,to,atomic) -> {
                 if(atomic) throw new FileAlreadyExistsException(to.toString());

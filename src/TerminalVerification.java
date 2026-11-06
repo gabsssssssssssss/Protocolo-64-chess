@@ -23,7 +23,7 @@ public final class TerminalVerification {
             check(transcript.contains("Lance inválido") && transcript.contains("MOVA"),"Fluxo terminal com motor real");
             var saved=new SessionStore(folder.resolve("sessao-terminal.properties")).load();
             check(saved.moves().size()==2 && saved.color()==Side.BLACK,"Sessão deve conter adversário e nosso lance");
-            check(TerminalGame.readClock(saved.clock())>=600_000,"Incremento registrado");
+            check(saved.increment()==0,"Partida regular sem incremento");
             Path log=folder.resolve("partida-"+saved.matchId()+".log");
             var logLines=Files.readAllLines(log);
             check(logLines.size()==3 && logLines.get(1).startsWith("1\tbrancas\te2e4\t1\t1\tcp 0\te2e4\t"),"Avaliação local real do lance adversário no log");
@@ -32,6 +32,8 @@ public final class TerminalVerification {
             check(metrics[1].equals("pretas") && Integer.parseInt(metrics[3])>0 && Long.parseLong(metrics[4])>0
                 && !metrics[5].equals("NA") && metrics[6].startsWith(metrics[2]) && Long.parseLong(metrics[7])>=0,
                 "Métricas reais do Stockfish");
+            check(TerminalGame.readClock(saved.clock())==Math.max(0,600_000-Long.parseLong(metrics[8]))/1000*1000,
+                "Relógio desconta o turno sem acrescentar segundos");
             new TerminalGame(new BufferedReader(new StringReader("restaurar\n14:30\nsair\n")),new PrintWriter(new StringWriter(),true),folder).run();
             check(Files.readAllLines(log).equals(logLines),"Restauração conserva o mesmo log");
             new SessionStore(folder.resolve("sessao-terminal.properties")).save(saved.color(),"00:00",saved.moves());
@@ -76,7 +78,7 @@ public final class TerminalVerification {
             StringWriter closed=new StringWriter();
             new TerminalGame(new BufferedReader(new StringReader("restaurar\nsair\n")),new PrintWriter(closed,true),folder).run();
             check(closed.toString().contains("Partida já encerrada"),"Partida encerrada preservada na restauração");
-            check(TimeManager.INITIAL_MILLIS==600_000 && TimeManager.INCREMENT_MILLIS==10_000,"Ritmo de 10 minutos com incremento configurado");
+            check(TimeManager.INITIAL_MILLIS==600_000 && TimeManager.INCREMENT_MILLIS==0,"Ritmo de 10 minutos sem incremento");
             new TerminalGame(new BufferedReader(new StringReader("brancas\nfeito\nsair\n")),new PrintWriter(new StringWriter(),true),folder,1).run();
             var fast=new SessionStore(folder.resolve("sessao-terminal.properties")).load();
             String[] fastMetrics=fast.logRows().getFirst().split("\t");
