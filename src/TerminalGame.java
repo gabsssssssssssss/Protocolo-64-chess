@@ -38,7 +38,7 @@ public final class TerminalGame {
         output.flush();
     }
     private void playMatch() throws IOException {
-        output.println("CAMPEONATO: 15 minutos por equipe + 10 segundos por lance.");
+        output.println("CAMPEONATO: 10 minutos por equipe + 10 segundos por lance.");
         output.println("Repita o UCI adversário. No nosso lance: anuncie, aguarde a repetição, mova e acione o relógio antes de digitar feito.");
         output.println("O tabuleiro e o relógio físicos prevalecem. Lance anulado: cancelar, com o relógio correndo.");
         output.println("Encerramento pelo árbitro: encerrar RESULTADO NOSSO_TEMPO TEMPO_ADVERSARIO (ex.: encerrar 1-0 03:20 00:00).");
@@ -196,7 +196,7 @@ public final class TerminalGame {
             +"\nNossa cor: "+(ours==Side.WHITE ? "brancas" : "pretas")
             +"\nNosso saldo físico em ms: "+ownClock+"\nSaldo físico adversário em ms: "+opponentClock
             +"\nIncremento em ms: "+increment+"\nLog: "+logPath().toAbsolutePath()
-            +"\nModalidade: "+(armageddon ? "Armageddon" : "Regular 15+10")
+            +"\nModalidade: "+(armageddon ? "Armageddon" : "Regular 10+10")
             +(armageddon && fields[1].equals("1/2-1/2") ? "\nEmpate no Armageddon: pretas classificadas." : "")
             +"\nOrigem adversario_avaliacao_local_java: avaliação material local após simular o lance recebido; profundidade 1, uma folha avaliada, PV igual ao lance."
             +"\nOrigem stockfish_avaliacao_local_java: Stockfish escolheu o lance sem métricas completas; avaliação material local do lance escolhido."

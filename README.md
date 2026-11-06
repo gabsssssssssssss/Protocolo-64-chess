@@ -22,7 +22,7 @@ No VS Code, pressione **Ctrl+Shift+B** para compilar e iniciar o jogo no termina
 
 `iniciar.bat` também abre esse modo de campeonato. A interface gráfica é identificada como treino, sem relógio acumulado, e pode ser aberta pela configuração **Treino gráfico (sem relógio de campeonato)** do VS Code ou por `java -cp "build;vendor/*" ChessChallenge` após compilar.
 
-1. Abra o programa antes de acionar o relógio para o Stockfish carregar. Escolha `brancas`, `pretas` ou `restaurar`. Nas partidas regulares, o saldo começa em 15 minutos e recebe 10 segundos a cada lance confirmado.
+1. Abra o programa antes de acionar o relógio para o Stockfish carregar. Escolha `brancas`, `pretas` ou `restaurar`. Nas partidas regulares, o saldo começa em 10 minutos e recebe 10 segundos a cada lance confirmado.
 2. Repita o UCI anunciado pelo adversário. Depois que ele mover a peça e acionar o relógio, digite o lance, como `e7e5` ou `e7e8q`. Use `e7e5 14:32` para sincronizar com o tempo restante **da sua cor** na entrada.
 3. Na nossa vez, com mais de 3 minutos o motor recebe até 5 segundos, ou 8 em posições táticas. Com 1 a 3 minutos, o teto cai para 3 segundos. Abaixo de 1 minuto, cai para 2 segundos, e abaixo de 20 segundos, para 1 segundo. Um único lance legal recebe até 100 ms. O saldo, o incremento e a reserva física podem reduzir esses tetos.
 4. Anuncie o UCI mostrado e aguarde a confirmação do adversário. Faça a jogada física, acione o relógio e digite `feito`. Para sincronizar com o valor físico já acrescido do incremento, use `feito 14:42`. `cancelar` recalcula; `sair` encerra com os lances já confirmados.

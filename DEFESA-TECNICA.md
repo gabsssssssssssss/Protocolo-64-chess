@@ -6,7 +6,7 @@ Além da gestão descrita abaixo, o projeto implementa `TacticalSearch.mateInOne
 
 O projeto utiliza o Stockfish 19 para busca e avaliação e a chesslib para regras. No terminal, a política Java `TimeManager.tournamentBudget` calcula o `go movetime` enviado ao Stockfish. A interface gráfica de treino usa `allocateForPosition`, descrita na próxima seção.
 
-No terminal, o saldo regular parte de 900.000 ms, desconta o tempo do nosso turno e soma 10.000 ms após a confirmação do lance. Acima de 3 minutos, a busca recebe até 5 segundos, ou 8 se o rei estiver em xeque, houver promoção legal ou for possível capturar uma torre ou dama. De 1 a 3 minutos o teto é de 3 segundos. Abaixo de 1 minuto é de 2 segundos e abaixo de 20 segundos é de 1 segundo. Um único lance legal recebe até 100 ms.
+No terminal, o saldo regular parte de 600.000 ms, desconta o tempo do nosso turno e soma 10.000 ms após a confirmação do lance. Acima de 3 minutos, a busca recebe até 5 segundos, ou 8 se o rei estiver em xeque, houver promoção legal ou for possível capturar uma torre ou dama. De 1 a 3 minutos o teto é de 3 segundos. Abaixo de 1 minuto é de 2 segundos e abaixo de 20 segundos é de 1 segundo. Um único lance legal recebe até 100 ms.
 
 Aplica-se ainda o menor limite entre o saldo menos a reserva física de 3.000 ms e o incremento mais um trigésimo desse saldo acima da reserva. Com saldo igual ou inferior à reserva, o pedido é de 1 ms. O relógio físico permite sincronização manual. O ajuste de relógio e o log foram implementados com assistência do Codex.
 
